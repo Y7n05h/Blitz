@@ -21,7 +21,7 @@ var (
 )
 
 func InitLog(enableLog bool, useTerminal bool) {
-	if enableLog {
+	if !enableLog {
 		Log = zap.NewNop().Sugar()
 		return
 	}
