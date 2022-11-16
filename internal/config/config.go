@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"os"
 	"path"
+	"tiny_cni/internal/log"
 	"tiny_cni/pkg/ipam"
 
 	"github.com/alexflint/go-filemutex"
 	"github.com/containernetworking/cni/pkg/types"
-	"go.uber.org/zap"
 )
 
 const (
@@ -55,7 +55,7 @@ func LoadStorage() (*PlugStorage, error) {
 	mtx, err := newFileMutex(StorageFilePath)
 	storage := &PlugStorage{Mtx: mtx}
 	if mtx.Lock() != err {
-		zap.S().Fatalf("Lock failed")
+		log.Log.Fatalf("Lock failed")
 	}
 	data, err := os.ReadFile(StorageFilePath)
 	if err != nil {
@@ -68,15 +68,15 @@ func LoadStorage() (*PlugStorage, error) {
 }
 func (s *PlugStorage) Store() error {
 	if err := s.Mtx.Unlock(); err != nil {
-		zap.S().Fatal("Unlock failed: ", err)
+		log.Log.Fatal("Unlock failed: ", err)
 	}
 	data, err := json.Marshal(s)
 	if err != nil {
-		zap.S().Error("Encode failed:", err)
+		log.Log.Error("Encode failed:", err)
 		return err
 	}
 	if err = os.WriteFile(StorageFilePath, data, 0644); err != nil {
-		zap.S().Error("Store failed:", err)
+		log.Log.Error("Store failed:", err)
 		return err
 	}
 	s.Ipv4Record = nil

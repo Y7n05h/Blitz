@@ -5,10 +5,10 @@ import (
 	"math/big"
 	"math/rand"
 	"net"
+	"tiny_cni/internal/log"
 
 	"github.com/containernetworking/cni/pkg/types"
 	cip "github.com/containernetworking/plugins/pkg/ip"
-	"go.uber.org/zap"
 )
 
 type IPAMRecord struct {
@@ -55,16 +55,16 @@ func intToIP(i *big.Int) net.IP {
 func (r *IPAMRecord) Alloc() net.IP {
 	size := r.getAvailableLen()
 	if size < 2 {
-		zap.S().Error("too small subnet")
+		log.Log.Error("too small subnet")
 		return nil
 	}
 	if size > 64 {
-		zap.S().Warn("too big subnet")
+		log.Log.Warn("too big subnet")
 		size = 64
 	}
 	max := (uint64(1) << size) - 3
 	if len(r.allocRecord) >= max {
-		zap.S().Error("subnet have no available ip addr")
+		log.Log.Error("subnet have no available ip addr")
 		return nil
 	}
 	for {
