@@ -1,0 +1,85 @@
+package config
+
+import (
+	"encoding/json"
+	"os"
+	"path"
+	"tiny_cni/pkg/ipam"
+
+	"github.com/alexflint/go-filemutex"
+	"github.com/containernetworking/cni/pkg/types"
+	"go.uber.org/zap"
+)
+
+const (
+	StoragePath     = "/run/tiny_cni/"
+	StorageFileName = "config.json"
+	StorageFilePath = StoragePath + StorageFileName
+)
+
+type PlugStorage struct {
+	Ipv4Record *ipam.IPAMRecord     `json:"ipv4"`
+	Mtx        *filemutex.FileMutex `json:"-"`
+}
+type Cfg struct {
+	types.NetConf
+}
+
+func LoadCfg(data []byte) (*Cfg, error) {
+	cfg := &Cfg{}
+	if err := json.Unmarshal(data, cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+func newFileMutex(lockPath string) (*filemutex.FileMutex, error) {
+	stat, err := os.Stat(lockPath)
+	if err != nil {
+		return nil, err
+	}
+	if stat.IsDir() {
+		lockPath = path.Join(lockPath, "lock")
+	}
+
+	mtx, err := filemutex.New(lockPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return mtx, nil
+}
+func LoadStorage() (*PlugStorage, error) {
+	if err := os.MkdirAll(StoragePath, 0750); err != nil {
+		return nil, err
+	}
+	mtx, err := newFileMutex(StorageFilePath)
+	storage := &PlugStorage{Mtx: mtx}
+	if mtx.Lock() != err {
+		zap.S().Fatalf("Lock failed")
+	}
+	data, err := os.ReadFile(StorageFilePath)
+	if err != nil {
+		return storage, nil
+	}
+	if err = json.Unmarshal(data, storage); err != nil {
+		return nil, err
+	}
+	return storage, nil
+}
+func (s *PlugStorage) Store() error {
+	if err := s.Mtx.Unlock(); err != nil {
+		zap.S().Fatal("Unlock failed: ", err)
+	}
+	data, err := json.Marshal(s)
+	if err != nil {
+		zap.S().Error("Encode failed:", err)
+		return err
+	}
+	if err = os.WriteFile(StorageFilePath, data, 0644); err != nil {
+		zap.S().Error("Store failed:", err)
+		return err
+	}
+	s.Ipv4Record = nil
+	s.Mtx = nil
+	return nil
+}

@@ -2,23 +2,25 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"runtime"
+	"tiny_cni/tiny_cni/internal/pkg/config"
+
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/version"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
-	"runtime"
 )
 
 const (
-	Program = "tiny_cni"
-	Version = "0.0.1"
+	Program   = "tiny_cni"
+	Version   = "0.0.1"
+	enableLog = true
 )
 
 func init() {
 	var lg *zap.Logger
-	disableLog := 0
-	if disableLog == 1 {
+	if enableLog {
 		lg = zap.NewNop()
 	} else {
 		file, _ := os.OpenFile("/tmp/1.log", os.O_APPEND|os.O_CREATE, 0644)
@@ -35,6 +37,20 @@ func init() {
 
 func cmdAdd(args *skel.CmdArgs) error {
 	zap.S().Debugf("[cmdAdd]args:%#v", *args)
+	_, err := config.LoadCfg(args.StdinData)
+	if err != nil {
+		return err
+	}
+	storage, err := config.LoadStorage()
+	ip := storage.Ipv4Record.Alloc()
+	if ip == nil {
+		return fmt.Errorf("alloc Ip failed")
+	}
+
+	err = storage.Store()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
