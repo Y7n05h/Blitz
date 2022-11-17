@@ -52,11 +52,10 @@ func ipToInt(ip net.IP) *big.Int {
 func intToIP(i *big.Int) net.IP {
 	return net.IP(i.Bytes())
 }
-func (r *Record) Alloc() net.IP {
+func (r *Record) Alloc() (*net.IPNet, error) {
 	size := r.getAvailableLen()
 	if size < 2 {
-		log.Log.Error("too small subnet")
-		return nil
+		return nil, fmt.Errorf("too small subnet")
 	}
 	if size > 64 {
 		log.Log.Warn("too big subnet")
@@ -64,8 +63,7 @@ func (r *Record) Alloc() net.IP {
 	}
 	max := (uint64(1) << size) - 3
 	if len(r.allocRecord) >= max {
-		log.Log.Error("subnet have no available ip addr")
-		return nil
+		return nil, fmt.Errorf("subnet have no available ip addr")
 	}
 	for {
 		idx := rand.Uint64() % max
@@ -73,7 +71,10 @@ func (r *Record) Alloc() net.IP {
 		ip := intToIP(ipNum.Add(ipNum, idx))
 		if !r.Alloced(&ip) {
 			r.allocRecord[ip.String()] = true
-			return ip
+			return &net.IPNet{
+				IP:   ip,
+				Mask: r.Cidr.Mask,
+			}, nil
 		}
 	}
 }
@@ -83,4 +84,7 @@ func (r *Record) Release(ip *net.IP) error {
 	}
 	delete(r.allocRecord, ip.String())
 	return nil
+}
+func (r *Record) Mask() net.IPMask {
+	return r.Cidr.Mask
 }
