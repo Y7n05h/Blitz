@@ -18,7 +18,7 @@ const (
 )
 
 type PlugStorage struct {
-	Ipv4Record *ipam.IPAMRecord     `json:"ipv4"`
+	Ipv4Record *ipam.Record         `json:"ipv4"`
 	Mtx        *filemutex.FileMutex `json:"-"`
 }
 type Cfg struct {

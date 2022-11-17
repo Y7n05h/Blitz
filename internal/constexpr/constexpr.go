@@ -8,3 +8,7 @@ const (
 	EnableLog           = true
 	LogOutputToTerminal = true
 )
+const (
+	BridgeName = "tcni0"
+	Mtu        = 1500
+)

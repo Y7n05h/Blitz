@@ -11,15 +11,15 @@ import (
 	cip "github.com/containernetworking/plugins/pkg/ip"
 )
 
-type IPAMRecord struct {
+type Record struct {
 	Cidr        *types.IPNet
 	allocRecord map[string]bool
 }
 
-func (r *IPAMRecord) getInnerIPNet() *net.IPNet {
+func (r *Record) getInnerIPNet() *net.IPNet {
 	return (*net.IPNet)(r.Cidr)
 }
-func (r *IPAMRecord) Alloced(ip *net.IP) bool {
+func (r *Record) Alloced(ip *net.IP) bool {
 	cidr := r.getInnerIPNet()
 	if !cidr.Contains(*ip) {
 		return false
@@ -32,15 +32,15 @@ func (r *IPAMRecord) Alloced(ip *net.IP) bool {
 	}
 	return false
 }
-func (r *IPAMRecord) getAvailableLen() int {
+func (r *Record) getAvailableLen() int {
 	ones, bits := r.Cidr.Mask.Size()
 	return bits - ones
 }
-func (r *IPAMRecord) Gateway() net.IP {
+func (r *Record) Gateway() *net.IPNet {
 	if r.getAvailableLen() < 2 {
 		return nil
 	}
-	return cip.NextIP(r.Cidr.IP)
+	return &net.IPNet{IP: cip.NextIP(r.Cidr.IP), Mask: r.Cidr.Mask}
 }
 func ipToInt(ip net.IP) *big.Int {
 	if v := ip.To4(); v != nil {
@@ -52,7 +52,7 @@ func ipToInt(ip net.IP) *big.Int {
 func intToIP(i *big.Int) net.IP {
 	return net.IP(i.Bytes())
 }
-func (r *IPAMRecord) Alloc() net.IP {
+func (r *Record) Alloc() net.IP {
 	size := r.getAvailableLen()
 	if size < 2 {
 		log.Log.Error("too small subnet")
@@ -69,7 +69,7 @@ func (r *IPAMRecord) Alloc() net.IP {
 	}
 	for {
 		idx := rand.Uint64() % max
-		ipNum := ipToInt(r.Gateway())
+		ipNum := ipToInt(r.Gateway().IP)
 		ip := intToIP(ipNum.Add(ipNum, idx))
 		if !r.Alloced(&ip) {
 			r.allocRecord[ip.String()] = true
@@ -77,7 +77,7 @@ func (r *IPAMRecord) Alloc() net.IP {
 		}
 	}
 }
-func (r *IPAMRecord) Release(ip *net.IP) error {
+func (r *Record) Release(ip *net.IP) error {
 	if r.Alloced(ip) == false {
 		return fmt.Errorf("ip:%s is not alloced", ip.String())
 	}
