@@ -24,7 +24,7 @@ func checkBridge(gateway *net.IPNet, br netlink.Link) bool {
 		return false
 	}
 	for _, v := range address {
-		if v.IP.Equal(gateway.IP) && v.Mask.Size() == gateway.Mask.Size() {
+		if v.IP.Equal(gateway.IP) {
 			return true
 		}
 	}
@@ -65,7 +65,7 @@ func GetBridge(gateway *net.IPNet) (netlink.Link, error) {
 	return dev, nil
 }
 func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *net.IPNet, gateway net.IP) error {
-	var name string
+	hostIdx := -1
 	err := netns.Do(func(hostNS ns.NetNS) error {
 		// setup lo, kubernetes will call loopback internal
 		loLink, err := netlink.LinkByName("lo")
@@ -78,14 +78,14 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *net.IPNet,
 		}
 
 		// create the veth pair in the container and move host end into host netns
-		hostVeth, containerVeth, err := ip.SetupVeth(ifName, constexpr.Mtu, "", hostNS)
+		host, container, err := ip.SetupVeth(ifName, constexpr.Mtu, "", hostNS)
 		if err != nil {
 			return err
 		}
-		name = hostVeth.Name
+		hostIdx = host.Index
 
 		// set ip for container veth
-		conLink, err := netlink.LinkByName(containerVeth.Name)
+		conLink, err := netlink.LinkByIndex(container.Index)
 		if err != nil {
 			return err
 		}
@@ -110,9 +110,9 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *net.IPNet,
 	}
 
 	// need to lookup hostVeth again as its index has changed during ns move
-	hostVeth, err := netlink.LinkByName(name)
+	hostVeth, err := netlink.LinkByIndex(hostIdx)
 	if err != nil {
-		return fmt.Errorf("failed to lookup %q: %v", name, err)
+		return fmt.Errorf("failed to lookup %d: %v", hostIdx, err)
 	}
 
 	if hostVeth == nil {
