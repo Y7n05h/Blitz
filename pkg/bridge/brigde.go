@@ -3,6 +3,7 @@ package bridge
 import (
 	"fmt"
 	"net"
+	"os"
 	"syscall"
 	"tiny_cni/internal/constexpr"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
-func checkBridge(gateway *net.IPNet, br netlink.Link) bool {
+func CheckBridge(gateway *net.IPNet, br netlink.Link) bool {
 	ipFamily := 0
 	if gateway.IP.To4() != nil {
 		ipFamily = syscall.AF_INET
@@ -34,7 +35,7 @@ func GetBridge(gateway *net.IPNet) (netlink.Link, error) {
 	if br, err := netlink.LinkByName(constexpr.BridgeName); err != nil {
 		return nil, err
 	} else {
-		if br != nil && checkBridge(gateway, br) {
+		if br != nil && CheckBridge(gateway, br) {
 			return br, nil
 		}
 	}
@@ -125,4 +126,16 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *net.IPNet,
 	}
 
 	return nil
+}
+func DelVeth(netns ns.NetNS, ifName string) error {
+	return netns.Do(func(_ ns.NetNS) error {
+		veth, err := netlink.LinkByName(ifName)
+		if err == os.ErrExist {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		return netlink.LinkDel(veth)
+	})
 }

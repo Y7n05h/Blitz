@@ -62,24 +62,28 @@ func LoadStorage() (*PlugStorage, error) {
 		return storage, nil
 	}
 	if err = json.Unmarshal(data, storage); err != nil {
+		log.Log.Error("Unmarshal failed")
+		err2 := mtx.Unlock()
+		if err2 != nil {
+			log.Log.Error("Unlock failed")
+		}
 		return nil, err
 	}
 	return storage, nil
 }
-func (s *PlugStorage) Store() error {
-	if err := s.Mtx.Unlock(); err != nil {
-		log.Log.Fatal("Unlock failed: ", err)
-	}
+func (s *PlugStorage) Store() {
 	data, err := json.Marshal(s)
-	if err != nil {
-		log.Log.Error("Encode failed:", err)
-		return err
-	}
-	if err = os.WriteFile(StorageFilePath, data, 0644); err != nil {
-		log.Log.Error("Store failed:", err)
-		return err
-	}
 	s.Ipv4Record = nil
 	s.Mtx = nil
-	return nil
+	if err != nil {
+		log.Log.Error("Encode failed:", err)
+	} else {
+		if err = os.WriteFile(StorageFilePath, data, 0644); err != nil {
+			log.Log.Error("Store failed:", err)
+		}
+	}
+	if err = s.Mtx.Unlock(); err != nil {
+		log.Log.Error("Unlock failed: ", err)
+		return
+	}
 }
