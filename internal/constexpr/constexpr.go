@@ -1,7 +1,7 @@
 package constexpr
 
 const (
-	Program = "tiny_cni"
+	Program = "tcni"
 	Version = "0.0.1"
 )
 const (

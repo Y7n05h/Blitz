@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	StoragePath     = "/run/tiny_cni/"
+	StoragePath     = "/run/tcni/"
 	StorageFileName = "config.json"
 	StorageFilePath = StoragePath + StorageFileName
 )
