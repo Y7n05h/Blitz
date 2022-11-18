@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	StoragePath     = "/run/tcni/"
+	StorageDir      = "/run/tcni/"
 	StorageFileName = "config.json"
-	StorageFilePath = StoragePath + StorageFileName
+	StorageFilePath = StorageDir + StorageFileName
 )
 
 type PlugStorage struct {
@@ -49,29 +49,52 @@ func newFileMutex(lockPath string) (*filemutex.FileMutex, error) {
 	return mtx, nil
 }
 func LoadStorage() (*PlugStorage, error) {
-	if err := os.MkdirAll(StoragePath, 0750); err != nil {
-		return nil, err
-	}
-	mtx, err := newFileMutex(StorageFilePath)
-	storage := &PlugStorage{Mtx: mtx}
-	if mtx.Lock() != err {
-		log.Log.Fatalf("Lock failed")
-	}
-	data, err := os.ReadFile(StorageFilePath)
-	if err != nil {
-		return storage, nil
-	}
-	if err = json.Unmarshal(data, storage); err != nil {
-		log.Log.Error("Unmarshal failed")
-		err2 := mtx.Unlock()
-		if err2 != nil {
-			log.Log.Error("Unlock failed")
+	if _, err := os.Stat(StorageFilePath); err == nil {
+		if err = os.MkdirAll(StorageDir, 0750); err != nil {
+			return nil, err
 		}
+		if file, err := os.Create(StorageFilePath); err != nil {
+			log.Log.Fatal("Init config failed:", err)
+		} else {
+			if err = file.Close(); err != nil {
+				log.Log.Fatal("Close config failed:", err)
+			}
+		}
+	}
+	mtx, err := newFileMutex(StorageDir)
+	if err != nil {
 		return nil, err
 	}
+	storage := &PlugStorage{Mtx: mtx}
+	storage.Load()
 	return storage, nil
 }
+func (s *PlugStorage) Lock() {
+	err := s.Mtx.Lock()
+	if err != nil {
+		log.Log.Fatalf("FileMutex Lock Failed")
+	}
+}
+func (s *PlugStorage) Unlock() {
+	err := s.Mtx.Unlock()
+	if err != nil {
+		log.Log.Fatalf("FileMutex Lock Failed")
+	}
+}
+func (s *PlugStorage) Load() {
+	s.Lock()
+	defer s.Unlock()
+	data, err := os.ReadFile(StorageFilePath)
+	if err != nil {
+		log.Log.Fatalf("Read Config Failed")
+	}
+	if err = json.Unmarshal(data, s); err != nil {
+		log.Log.Fatalf("Encode Config Failed")
+	}
+}
 func (s *PlugStorage) Store() {
+	s.Lock()
+	defer s.Unlock()
 	data, err := json.Marshal(s)
 	s.Ipv4Record = nil
 	s.Mtx = nil
@@ -79,11 +102,7 @@ func (s *PlugStorage) Store() {
 		log.Log.Error("Encode failed:", err)
 	} else {
 		if err = os.WriteFile(StorageFilePath, data, 0644); err != nil {
-			log.Log.Error("Store failed:", err)
+			log.Log.Fatalf("Write Config Failed")
 		}
-	}
-	if err = s.Mtx.Unlock(); err != nil {
-		log.Log.Error("Unlock failed: ", err)
-		return
 	}
 }

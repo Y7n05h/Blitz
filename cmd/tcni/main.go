@@ -28,7 +28,6 @@ func cmdAdd(args *skel.CmdArgs) error {
 	if err != nil {
 		return fmt.Errorf("load storage failed")
 	}
-	defer storage.Store()
 	ip, err := storage.Ipv4Record.Alloc(args.ContainerID)
 	if err != nil {
 		return fmt.Errorf("alloc Ip failed")
