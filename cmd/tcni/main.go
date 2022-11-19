@@ -114,7 +114,7 @@ func cmdCheck(args *skel.CmdArgs) error {
 		if err != nil {
 			return err
 		}
-		if !bridge.CheckBridge(ipNet, veth) {
+		if !bridge.CheckLinkContainIPNNet(ipNet, veth) {
 			return fmt.Errorf("%s does not have %s", veth.Attrs().Name, ipNet.String())
 		}
 		return nil

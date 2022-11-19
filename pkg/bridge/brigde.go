@@ -13,17 +13,18 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
-func CheckBridge(gateway *net.IPNet, br netlink.Link) bool {
+func CheckLinkContainIPNNet(gateway *net.IPNet, br netlink.Link) bool {
 	ipFamily := 0
 	if gateway.IP.To4() != nil {
-		ipFamily = syscall.AF_INET
+		ipFamily = netlink.FAMILY_V4
 	} else {
-		ipFamily = syscall.AF_INET6
+		ipFamily = netlink.FAMILY_V6
 	}
 	address, err := netlink.AddrList(br, ipFamily)
 	if err != nil {
 		return false
 	}
+	//TODO: check Mask
 	for _, v := range address {
 		if v.IP.Equal(gateway.IP) {
 			return true
@@ -35,7 +36,7 @@ func GetBridge(gateway *net.IPNet) (netlink.Link, error) {
 	if br, err := netlink.LinkByName(constexpr.BridgeName); err != nil {
 		return nil, err
 	} else {
-		if br != nil && CheckBridge(gateway, br) {
+		if br != nil && CheckLinkContainIPNNet(gateway, br) {
 			return br, nil
 		}
 	}
@@ -138,4 +139,19 @@ func DelVeth(netns ns.NetNS, ifName string) error {
 		}
 		return netlink.LinkDel(veth)
 	})
+}
+func LinkByIP(ip *net.IPNet) (netlink.Link, error) {
+	links, err := netlink.LinkList()
+	if err != nil {
+		return nil, err
+	}
+	for _, link := range links {
+		if link == nil {
+			continue
+		}
+		if CheckLinkContainIPNNet(ip, link) {
+			return link, err
+		}
+	}
+	return nil, fmt.Errorf("can not found ip")
 }
