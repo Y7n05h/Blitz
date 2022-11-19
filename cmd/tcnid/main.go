@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 	"tiny_cni/internal/Reconciler"
 	"tiny_cni/internal/config"
 	"tiny_cni/internal/log"
@@ -11,6 +12,13 @@ import (
 )
 
 func main() {
+	if 0 == 1 {
+	_:
+		Run()
+	}
+	time.Sleep(time.Hour * 24)
+}
+func Run() error {
 	kubeCfg, err := rest.InClusterConfig()
 	if err != nil {
 		log.Log.Fatalf("Get Cluster Failed. May be not in a Cluster")
@@ -29,4 +37,5 @@ func main() {
 		log.Log.Fatal("Create Reconciler failed:", err)
 	}
 	reconciler.ReconcilerLoop()
+	return nil
 }

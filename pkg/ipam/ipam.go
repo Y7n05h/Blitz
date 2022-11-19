@@ -64,11 +64,12 @@ func (r *Record) Alloc(id string) (*net.IPNet, error) {
 		size = 64
 	}
 	max := (uint64(1) << size) - 3
-	if r.allocRecord.Size() >= max {
+	if uint64(r.allocRecord.Size()) >= max {
 		return nil, fmt.Errorf("subnet have no available ip addr")
 	}
+	idx := big.NewInt(0)
 	for {
-		idx := rand.Uint64() % max
+		idx.SetUint64(rand.Uint64() % max)
 		ipNum := ipToInt(r.Gateway().IP)
 		ip := intToIP(ipNum.Add(ipNum, idx))
 		if !r.Alloced(&ip) {
