@@ -28,9 +28,14 @@ func cmdAdd(args *skel.CmdArgs) error {
 	if err != nil {
 		return fmt.Errorf("load storage failed")
 	}
-	ip, err := storage.Ipv4Record.Alloc(args.ContainerID)
+	var ip *net.IPNet
+	err = storage.AtomicDo(func() error {
+		var err error
+		ip, err = storage.Ipv4Record.Alloc(args.ContainerID)
+		return err
+	})
 	if err != nil {
-		return fmt.Errorf("alloc Ip failed")
+		return err
 	}
 	gateway := storage.Ipv4Record.Gateway()
 	br, err := bridge.GetBridge(gateway)
@@ -69,7 +74,6 @@ func cmdDel(args *skel.CmdArgs) error {
 	if err != nil {
 		return fmt.Errorf("load storage failed")
 	}
-	defer storage.Store()
 	netns, err := ns.GetNS(args.Netns)
 	if err != nil {
 		return fmt.Errorf("get netns failed")
@@ -78,7 +82,9 @@ func cmdDel(args *skel.CmdArgs) error {
 	if err != nil {
 		return err
 	}
-	err = storage.Ipv4Record.Release(args.ContainerID)
+	err = storage.AtomicDo(func() error {
+		return storage.Ipv4Record.Release(args.ContainerID)
+	})
 	if err != nil {
 		return err
 	}

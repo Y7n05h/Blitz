@@ -14,7 +14,7 @@ import (
 const (
 	StorageDir      = "/run/tcni/"
 	StorageFileName = "config.json"
-	StorageFilePath = StorageDir + StorageFileName
+	StoragePath     = StorageDir + StorageFileName
 )
 
 type PlugStorage struct {
@@ -49,11 +49,11 @@ func newFileMutex(lockPath string) (*filemutex.FileMutex, error) {
 	return mtx, nil
 }
 func LoadStorage() (*PlugStorage, error) {
-	if _, err := os.Stat(StorageFilePath); err == nil {
+	if _, err := os.Stat(StoragePath); err == nil {
 		if err = os.MkdirAll(StorageDir, 0750); err != nil {
 			return nil, err
 		}
-		if file, err := os.Create(StorageFilePath); err != nil {
+		if file, err := os.Create(StoragePath); err != nil {
 			log.Log.Fatal("Init config failed:", err)
 		} else {
 			if err = file.Close(); err != nil {
@@ -83,26 +83,31 @@ func (s *PlugStorage) Unlock() {
 }
 func (s *PlugStorage) Load() {
 	s.Lock()
-	defer s.Unlock()
-	data, err := os.ReadFile(StorageFilePath)
+	data, err := os.ReadFile(StoragePath)
 	if err != nil {
+		s.Unlock()
 		log.Log.Fatalf("Read Config Failed")
 	}
 	if err = json.Unmarshal(data, s); err != nil {
+		s.Unlock()
 		log.Log.Fatalf("Encode Config Failed")
 	}
 }
 func (s *PlugStorage) Store() {
-	s.Lock()
-	defer s.Unlock()
 	data, err := json.Marshal(s)
-	s.Ipv4Record = nil
-	s.Mtx = nil
 	if err != nil {
-		log.Log.Error("Encode failed:", err)
-	} else {
-		if err = os.WriteFile(StorageFilePath, data, 0644); err != nil {
-			log.Log.Fatalf("Write Config Failed")
-		}
+		s.Unlock()
+		log.Log.Fatal("Encode failed:", err)
 	}
+	if err = os.WriteFile(StoragePath, data, 0644); err != nil {
+		s.Unlock()
+		log.Log.Fatal("Write Config Failed:", err)
+	}
+	s.Unlock()
+}
+func (s *PlugStorage) AtomicDo(inner func() error) error {
+	s.Load()
+	err := inner()
+	s.Store()
+	return err
 }
