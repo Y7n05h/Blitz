@@ -11,4 +11,8 @@ const (
 const (
 	BridgeName = "tcni0"
 	Mtu        = 1500
+	VxlanId    = 666
+	VXLANPort  = 12564
+	VXLANGroup = "239.1.1.1"
+	VXLANName  = "tcni"
 )

@@ -6,6 +6,7 @@ import (
 	"os"
 	"syscall"
 	"tiny_cni/internal/constexpr"
+	"tiny_cni/internal/log"
 
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ns"
@@ -126,7 +127,12 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *net.IPNet,
 		return fmt.Errorf("failed to connect %q to bridge %v: %v", hostVeth.Attrs().Name, br.Attrs().Name, err)
 	}
 
-	return nil
+	hostIP, err := GetHostIP()
+	if err != nil {
+		return err
+	}
+	_, err = CreateVXLAN(hostIP.IP)
+	return err
 }
 func DelVeth(netns ns.NetNS, ifName string) error {
 	return netns.Do(func(_ ns.NetNS) error {
@@ -154,4 +160,64 @@ func LinkByIP(ip *net.IPNet) (netlink.Link, error) {
 		}
 	}
 	return nil, fmt.Errorf("can not found ip")
+}
+func GetDefaultGateway() (*netlink.Link, error) {
+	//	TODO: Support IPv6
+	routes, err := netlink.RouteList(nil, netlink.FAMILY_V4)
+	if err != nil {
+		return nil, err
+	}
+	for _, route := range routes {
+		if route.Dst == nil {
+			link, err := netlink.LinkByIndex(route.LinkIndex)
+			if err != nil {
+				log.Log.Warn("LinkByIndex:", err)
+				continue
+			}
+			return &link, nil
+		}
+	}
+	return nil, fmt.Errorf("get Default Gateway failed")
+}
+func CreateVXLAN(hostIP net.IP) (*netlink.Vxlan, error) {
+	group, _, _ := net.ParseCIDR(constexpr.VXLANGroup)
+	attrs := netlink.NewLinkAttrs()
+	attrs.Name = constexpr.VXLANName
+
+	exist, err := netlink.LinkByName(constexpr.VXLANName)
+	if err == os.ErrNotExist && exist != nil {
+		return exist.(*netlink.Vxlan), nil
+	}
+	vtep := netlink.Vxlan{
+		LinkAttrs: attrs,
+		VxlanId:   constexpr.VxlanId,
+		SrcAddr:   hostIP,
+		Group:     group,
+		Learning:  true,
+		Port:      constexpr.VXLANPort,
+	}
+	err = netlink.LinkAdd(&vtep)
+	if err != nil {
+		return nil, err
+	}
+	vxlan, err := netlink.LinkByName(attrs.Name)
+	if err != nil {
+		return nil, err
+	}
+	return vxlan.(*netlink.Vxlan), nil
+}
+func GetHostIP() (*net.IPNet, error) {
+	link, err := GetDefaultGateway()
+	if err != nil {
+		return nil, err
+	}
+	//	TODO: Support IPv6
+	address, err := netlink.AddrList(*link, netlink.FAMILY_V4)
+	if err != nil {
+		return nil, err
+	}
+	for _, addr := range address {
+		return addr.IPNet, nil
+	}
+	return nil, fmt.Errorf("get HostIP failed")
 }
