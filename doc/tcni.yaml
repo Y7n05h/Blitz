@@ -83,18 +83,18 @@ spec:
         effect: NoSchedule
       serviceAccountName: tcni
       initContainers:
-      - name: install-cni-plugin
-        image: tcni:1f3ac17
-        imagePullPolicy: Never
-        command:
-        - cp
-        args:
-        - -f
-        - /opt/bin/tcni
-        - /opt/cni/bin/tcni
-        volumeMounts:
-        - name: cni-plugin
-          mountPath: /opt/cni/bin
+#      - name: install-cni-plugin
+#        image: tcni:1f3ac17
+#        imagePullPolicy: Never
+#        command:
+#        - cp
+#        args:
+#        - -f
+#        - /opt/bin/tcni
+#        - /opt/cni/bin/tcni
+#        volumeMounts:
+#        - name: cni-plugin
+#          mountPath: /opt/cni/bin
       - name: install-cni
         image: tcni:1f3ac17
         imagePullPolicy: Never

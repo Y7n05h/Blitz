@@ -61,7 +61,7 @@ func LoadStorage() (*PlugStorage, error) {
 			}
 		}
 	}
-	mtx, err := newFileMutex(StorageDir)
+	mtx, err := newFileMutex(StorageFileName)
 	if err != nil {
 		return nil, err
 	}
