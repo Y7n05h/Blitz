@@ -90,7 +90,7 @@ spec:
         - cp
         args:
         - -f
-        - /tcni
+        - /opt/bin/tcni
         - /opt/cni/bin/tcni
         volumeMounts:
         - name: cni-plugin
@@ -114,7 +114,7 @@ spec:
         image: tcni:1f3ac17
         imagePullPolicy: Never
         command:
-        - /tcnid
+        - /opt/bin/tcnid
         args:
         # get cluster cidr from kube-controller-manager
         - --cluster-cidr=10.244.0.0/16
