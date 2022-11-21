@@ -2,7 +2,7 @@
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: mycni
+  name: tcni
 rules:
 - apiGroups:
   - ""
@@ -16,26 +16,26 @@ rules:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: mycni
+  name: tcni
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: mycni
+  name: tcni
 subjects:
 - kind: ServiceAccount
-  name: mycni
+  name: tcni
   namespace: kube-system
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: mycni
+  name: tcni
   namespace: kube-system
 ---
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: kube-mycni-cfg
+  name: kube-tcni-cfg
   namespace: kube-system
   labels:
     tier: node
@@ -43,29 +43,29 @@ metadata:
 data:
   cni-conf.json: |
     {
-      "name": "mycni",
+      "name": "tcni",
       "cniVersion": "0.4.0",
-      "type": "mycni",
+      "type": "tcni",
       "dataDir": "/var/lib/cni/networks"
     }
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: kube-mycni-ds
+  name: kube-tcni-ds
   namespace: kube-system
   labels:
     tier: node
-    app: mycni
+    app: tcni
 spec:
   selector:
     matchLabels:
-      app: mycni
+      app: tcni
   template:
     metadata:
       labels:
         tier: node
-        app: mycni
+        app: tcni
     spec:
       affinity:
         nodeAffinity:
@@ -81,38 +81,40 @@ spec:
       tolerations:
       - operator: Exists
         effect: NoSchedule
-      serviceAccountName: mycni
+      serviceAccountName: tcni
       initContainers:
       - name: install-cni-plugin
-        # mycni image
-        image: mycni:v1.0
+        image: tcni:1f3ac17
+        imagePullPolicy: Never
         command:
         - cp
         args:
         - -f
-        - /mycni
-        - /opt/cni/bin/mycni
+        - /tcni
+        - /opt/cni/bin/tcni
         volumeMounts:
         - name: cni-plugin
           mountPath: /opt/cni/bin
       - name: install-cni
-        image: mycni:v1.0
+        image: tcni:1f3ac17
+        imagePullPolicy: Never
         command:
         - cp
         args:
         - -f
-        - /etc/kube-mycni/cni-conf.json
-        - /etc/cni/net.d/10-mycni.conf
+        - /etc/kube-tcni/cni-conf.json
+        - /etc/cni/net.d/10-tcni.conf
         volumeMounts:
         - name: cni
           mountPath: /etc/cni/net.d
-        - name: mycni-cfg
-          mountPath: /etc/kube-mycni/
+        - name: tcni-cfg
+          mountPath: /etc/kube-tcni/
       containers:
-      - name: kube-mycni
-        image: mycni:v1.0
+      - name: kube-tcni
+        image: tcni:1f3ac17
+        imagePullPolicy: Never
         command:
-        - /mycnid
+        - /tcnid
         args:
         # get cluster cidr from kube-controller-manager
         - --cluster-cidr=10.244.0.0/16
@@ -136,19 +138,19 @@ spec:
               fieldPath: spec.nodeName
         volumeMounts:
         - name: run
-          mountPath: /run/mycni
-        - name: mycni-cfg
-          mountPath: /etc/kube-mycni/
+          mountPath: /run/tcni
+        - name: tcni-cfg
+          mountPath: /etc/kube-tcni/
       volumes:
       - name: run
         hostPath:
-          path: /run/mycni
+          path: /run/tcni
       - name: cni-plugin
         hostPath:
           path: /opt/cni/bin
       - name: cni
         hostPath:
           path: /etc/cni/net.d
-      - name: mycni-cfg
+      - name: tcni-cfg
         configMap:
-          name: kube-mycni-cfg
+          name: kube-tcni-cfg
