@@ -94,10 +94,10 @@ func (s *PlugStorage) Load() {
 	data, err := os.ReadFile(StoragePath)
 	if err != nil {
 		s.Unlock()
-		log.Log.Fatalf("Read Config Failed")
+		log.Log.Fatal("Read Config Failed", err)
 	}
 	if len(data) < 2 {
-		log.Log.Fatalf("Empty Config: May be first run this plug in this node?")
+		log.Log.Fatal("Empty Config: May be first run this plug in this node?")
 		return
 	}
 	if err = json.Unmarshal(data, s); err != nil {

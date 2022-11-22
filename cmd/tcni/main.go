@@ -21,36 +21,49 @@ import (
 func cmdAdd(args *skel.CmdArgs) error {
 	log.Log.Debugf("[cmdAdd]args:%#v", *args)
 	cfg, err := config.LoadCfg(args.StdinData)
+	log.Log.Debug("[Success]LoadCfg")
 	if err != nil {
+		log.Log.Debug("Err:", err)
 		return err
 	}
 	storage, err := config.LoadStorage()
+	log.Log.Debug("[Finished]LoadStorage")
 	if err != nil {
+		log.Log.Debug("Err:", err)
 		return err
 	}
+	log.Log.Debug("[Success]LoadStorage")
 	var ip *net.IPNet
 	err = storage.AtomicDo(func() error {
 		var err error
 		ip, err = storage.Ipv4Record.Alloc(args.ContainerID)
 		return err
 	})
+	log.Log.Debug("[Done]Alloc IP")
 	if err != nil {
+		log.Log.Debug("Err:", err)
 		return err
 	}
+	log.Log.Debug("[Success]Alloc IP")
 	gateway := storage.Ipv4Record.Gateway()
 	br, err := bridge.GetBridge(gateway)
 	if err != nil {
+		log.Log.Debug("Err:", err)
 		return err
 	}
 	if br == nil {
+		log.Log.Debug("Err:", err)
 		return fmt.Errorf("get Bridge failed")
 	}
+	log.Log.Debug("[Success]get Bridge")
 	netns, err := ns.GetNS(args.Netns)
 	if err != nil {
+		log.Log.Debug("Err:", err)
 		return err
 	}
 
 	if err := bridge.SetupVeth(netns, br, args.IfName, ip, gateway.IP); err != nil {
+		log.Log.Debug("Err:", err)
 		return err
 	}
 	result := types100.Result{
@@ -61,6 +74,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 			},
 		},
 	}
+	log.Log.Debug("Success")
 	return types.PrintResult(&result, cfg.CNIVersion)
 }
 
