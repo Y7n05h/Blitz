@@ -97,7 +97,7 @@ func (s *PlugStorage) Load() {
 		log.Log.Fatal("Read Config Failed", err)
 	}
 	if len(data) < 2 {
-		log.Log.Fatal("Empty Config: May be first run this plug in this node?")
+		log.Log.Warn("Empty Config: May be first run this plug in this node?")
 		return
 	}
 	if err = json.Unmarshal(data, s); err != nil {

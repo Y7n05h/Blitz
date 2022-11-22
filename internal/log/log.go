@@ -35,7 +35,7 @@ func InitLog(enableLog bool, useTerminal bool) {
 			panic(err)
 		}
 		writeSyncer := zapcore.AddSync(file)
-		encoder := zapcore.NewJSONEncoder(encoderCfg)
+		encoder := zapcore.NewConsoleEncoder(encoderCfg)
 		core := zapcore.NewCore(encoder, writeSyncer, zapcore.DebugLevel)
 		Log = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel)).Sugar()
 		OutPutEnv()
