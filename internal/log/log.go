@@ -46,3 +46,7 @@ func InitLog(enableLog bool, useTerminal bool) {
 func init() {
 	InitLog(constexpr.EnableLog, constexpr.LogOutputToTerminal)
 }
+func OutPutEnv() {
+	env := os.Environ()
+	Log.Debug(env)
+}

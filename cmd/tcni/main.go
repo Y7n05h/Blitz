@@ -19,6 +19,7 @@ import (
 )
 
 func cmdAdd(args *skel.CmdArgs) error {
+	log.OutPutEnv()
 	log.Log.Debugf("[cmdAdd]args:%#v", *args)
 	cfg, err := config.LoadCfg(args.StdinData)
 	if err != nil {
@@ -65,6 +66,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 }
 
 func cmdDel(args *skel.CmdArgs) error {
+	log.OutPutEnv()
 	log.Log.Debugf("[cmdDel]args:%#v", *args)
 	//cfg, err := config.LoadCfg(args.StdinData)
 	//if err != nil {
@@ -91,6 +93,7 @@ func cmdDel(args *skel.CmdArgs) error {
 	return nil
 }
 func cmdCheck(args *skel.CmdArgs) error {
+	log.OutPutEnv()
 	log.Log.Debugf("[cmdCheck]args:%#v", *args)
 	storage, err := config.LoadStorage()
 	if err != nil {
