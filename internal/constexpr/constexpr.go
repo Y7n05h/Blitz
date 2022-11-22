@@ -6,7 +6,7 @@ const (
 )
 const (
 	EnableLog           = true
-	LogOutputToTerminal = true
+	LogOutputToTerminal = false
 )
 const (
 	BridgeName = "tcni0"

@@ -1,7 +1,9 @@
 package log
 
 import (
+	"fmt"
 	"os"
+	"time"
 	"tiny_cni/internal/constexpr"
 
 	"go.uber.org/zap"
@@ -17,7 +19,7 @@ func getLogEncoder() zapcore.EncoderConfig {
 }
 
 var (
-	Log = zap.S()
+	Log *zap.SugaredLogger
 )
 
 func InitLog(enableLog bool, useTerminal bool) {
@@ -27,11 +29,16 @@ func InitLog(enableLog bool, useTerminal bool) {
 	}
 	encoderCfg := getLogEncoder()
 	if !useTerminal {
-		file, _ := os.OpenFile("/tmp/1.log", os.O_APPEND|os.O_CREATE, 0644)
+		name := fmt.Sprintf("/tmp/tcni-%s-%d.log", time.Now().Format(time.RFC3339), os.Getpid())
+		file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			panic(err)
+		}
 		writeSyncer := zapcore.AddSync(file)
 		encoder := zapcore.NewJSONEncoder(encoderCfg)
 		core := zapcore.NewCore(encoder, writeSyncer, zapcore.DebugLevel)
 		Log = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel)).Sugar()
+		OutPutEnv()
 		return
 	}
 	loggerCfg := zap.NewDevelopmentConfig()
@@ -41,7 +48,7 @@ func InitLog(enableLog bool, useTerminal bool) {
 		os.Exit(-1)
 	}
 	Log = lg.Sugar()
-
+	OutPutEnv()
 }
 func init() {
 	InitLog(constexpr.EnableLog, constexpr.LogOutputToTerminal)

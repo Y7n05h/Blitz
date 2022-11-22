@@ -84,7 +84,7 @@ spec:
       serviceAccountName: tcni
       initContainers:
 #      - name: install-cni-plugin
-#        image: tcni:1f3ac17
+#        image: tcni:dedc3c8
 #        imagePullPolicy: Never
 #        command:
 #        - cp
@@ -96,7 +96,7 @@ spec:
 #        - name: cni-plugin
 #          mountPath: /opt/cni/bin
       - name: install-cni
-        image: tcni:1f3ac17
+        image: tcni:dedc3c8
         imagePullPolicy: Never
         command:
         - cp
@@ -111,7 +111,7 @@ spec:
           mountPath: /etc/kube-tcni/
       containers:
       - name: kube-tcni
-        image: tcni:1f3ac17
+        image: tcni:dedc3c8
         imagePullPolicy: Never
         command:
         - /opt/bin/tcnid

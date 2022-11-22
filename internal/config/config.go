@@ -49,7 +49,8 @@ func newFileMutex(lockPath string) (*filemutex.FileMutex, error) {
 	return mtx, nil
 }
 func LoadStorage() (*PlugStorage, error) {
-	if _, err := os.Stat(StoragePath); err == nil {
+	var err error
+	if _, err = os.Stat(StoragePath); err == os.ErrNotExist {
 		if err = os.MkdirAll(StorageDir, 0750); err != nil {
 			return nil, err
 		}
@@ -60,6 +61,10 @@ func LoadStorage() (*PlugStorage, error) {
 				log.Log.Fatal("Close config failed:", err)
 			}
 		}
+		err = nil
+	}
+	if err != nil {
+		return nil, err
 	}
 	mtx, err := newFileMutex(StorageFileName)
 	if err != nil {

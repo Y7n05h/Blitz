@@ -19,7 +19,6 @@ import (
 )
 
 func cmdAdd(args *skel.CmdArgs) error {
-	log.OutPutEnv()
 	log.Log.Debugf("[cmdAdd]args:%#v", *args)
 	cfg, err := config.LoadCfg(args.StdinData)
 	if err != nil {
@@ -27,7 +26,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 	storage, err := config.LoadStorage()
 	if err != nil {
-		return fmt.Errorf("load storage failed")
+		return err
 	}
 	var ip *net.IPNet
 	err = storage.AtomicDo(func() error {
@@ -66,7 +65,6 @@ func cmdAdd(args *skel.CmdArgs) error {
 }
 
 func cmdDel(args *skel.CmdArgs) error {
-	log.OutPutEnv()
 	log.Log.Debugf("[cmdDel]args:%#v", *args)
 	//cfg, err := config.LoadCfg(args.StdinData)
 	//if err != nil {
@@ -74,7 +72,7 @@ func cmdDel(args *skel.CmdArgs) error {
 	//}
 	storage, err := config.LoadStorage()
 	if err != nil {
-		return fmt.Errorf("load storage failed")
+		return err
 	}
 	netns, err := ns.GetNS(args.Netns)
 	if err != nil {
@@ -93,11 +91,10 @@ func cmdDel(args *skel.CmdArgs) error {
 	return nil
 }
 func cmdCheck(args *skel.CmdArgs) error {
-	log.OutPutEnv()
 	log.Log.Debugf("[cmdCheck]args:%#v", *args)
 	storage, err := config.LoadStorage()
 	if err != nil {
-		return fmt.Errorf("load storage failed")
+		return err
 	}
 	defer storage.Store()
 	ip, ok := storage.Ipv4Record.GetIPByID(args.ContainerID)
