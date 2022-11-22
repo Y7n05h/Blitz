@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path"
 	"tiny_cni/internal/log"
@@ -50,7 +51,7 @@ func newFileMutex(lockPath string) (*filemutex.FileMutex, error) {
 }
 func LoadStorage() (*PlugStorage, error) {
 	var err error
-	if _, err = os.Stat(StoragePath); err == os.ErrNotExist {
+	if _, err = os.Stat(StoragePath); errors.Is(err, os.ErrNotExist) {
 		if err = os.MkdirAll(StorageDir, 0750); err != nil {
 			return nil, err
 		}
@@ -64,10 +65,12 @@ func LoadStorage() (*PlugStorage, error) {
 		err = nil
 	}
 	if err != nil {
+		log.Log.Debugf("%#v", err)
 		return nil, err
 	}
-	mtx, err := newFileMutex(StorageFileName)
+	mtx, err := newFileMutex(StoragePath)
 	if err != nil {
+		log.Log.Debug(err)
 		return nil, err
 	}
 	storage := &PlugStorage{Mtx: mtx}
@@ -77,13 +80,13 @@ func LoadStorage() (*PlugStorage, error) {
 func (s *PlugStorage) Lock() {
 	err := s.Mtx.Lock()
 	if err != nil {
-		log.Log.Fatalf("FileMutex Lock Failed")
+		log.Log.Fatal("FileMutex Lock Failed:", err)
 	}
 }
 func (s *PlugStorage) Unlock() {
 	err := s.Mtx.Unlock()
 	if err != nil {
-		log.Log.Fatalf("FileMutex Lock Failed")
+		log.Log.Fatal("FileMutex Lock Failed:", err)
 	}
 }
 func (s *PlugStorage) Load() {
@@ -93,9 +96,13 @@ func (s *PlugStorage) Load() {
 		s.Unlock()
 		log.Log.Fatalf("Read Config Failed")
 	}
+	if len(data) < 2 {
+		log.Log.Fatalf("Empty Config: May be first run this plug in this node?")
+		return
+	}
 	if err = json.Unmarshal(data, s); err != nil {
 		s.Unlock()
-		log.Log.Fatalf("Encode Config Failed")
+		log.Log.Fatal("Encode Config Failed:", err, "json:", data)
 	}
 }
 func (s *PlugStorage) Store() {
@@ -106,7 +113,7 @@ func (s *PlugStorage) Store() {
 	}
 	if err = os.WriteFile(StoragePath, data, 0644); err != nil {
 		s.Unlock()
-		log.Log.Fatal("Write Config Failed:", err)
+		log.Log.Fatal("Write Config Failed: ", err, "\ndata:", data)
 	}
 	s.Unlock()
 }
