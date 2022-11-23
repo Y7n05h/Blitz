@@ -16,7 +16,7 @@ import (
 type Record struct {
 	Cidr *types.IPNet
 	//	IP  -> ID
-	allocRecord *bimap.BiMap[string, string]
+	AllocRecord *bimap.BiMap[string, string]
 }
 
 func (r Record) Marshal() []byte {
@@ -25,7 +25,7 @@ func (r Record) Marshal() []byte {
 		AllocRecord map[string]string
 	}{
 		Cidr:        *r.getInnerIPNet(),
-		AllocRecord: r.allocRecord.GetForwardMap(),
+		AllocRecord: r.AllocRecord.GetForwardMap(),
 	})
 	if err != nil {
 		log.Log.Fatal("Encode failed")
@@ -41,11 +41,12 @@ func (r *Record) Unmarshal(data []byte) error {
 		return err
 	}
 	r.Cidr = (*types.IPNet)(&record.Cidr)
-	r.allocRecord = bimap.NewBiMapFromMap[string, string](record.AllocRecord)
+	r.AllocRecord = bimap.NewBiMapFromMap[string, string](record.AllocRecord)
+	log.Log.Debug("Unmarshal Record")
 	return nil
 }
 func New(subnet *net.IPNet) *Record {
-	return &Record{Cidr: (*types.IPNet)(subnet), allocRecord: bimap.NewBiMap[string, string]()}
+	return &Record{Cidr: (*types.IPNet)(subnet), AllocRecord: bimap.NewBiMap[string, string]()}
 }
 func (r *Record) getInnerIPNet() *net.IPNet {
 	return (*net.IPNet)(r.Cidr)
@@ -55,7 +56,7 @@ func (r *Record) Alloced(ip *net.IP) bool {
 	if !cidr.Contains(*ip) {
 		return false
 	}
-	_, ok := r.allocRecord.Get(ip.String())
+	_, ok := r.AllocRecord.Get(ip.String())
 	return ok
 }
 func (r *Record) getAvailableLen() int {
@@ -93,7 +94,7 @@ func (r *Record) Alloc(id string) (*net.IPNet, error) {
 		size = 64
 	}
 	max := (uint64(1) << size) - 3
-	if uint64(r.allocRecord.Size()) >= max {
+	if uint64(r.AllocRecord.Size()) >= max {
 		return nil, fmt.Errorf("subnet have no available ip addr")
 	}
 	idx := big.NewInt(0)
@@ -102,7 +103,7 @@ func (r *Record) Alloc(id string) (*net.IPNet, error) {
 		ipNum := ipToInt(r.Gateway().IP)
 		ip := intToIP(ipNum.Add(ipNum, idx))
 		if !r.Alloced(&ip) {
-			r.allocRecord.Insert(ip.String(), id)
+			r.AllocRecord.Insert(ip.String(), id)
 			return &net.IPNet{
 				IP:   ip,
 				Mask: r.Cidr.Mask,
@@ -111,11 +112,11 @@ func (r *Record) Alloc(id string) (*net.IPNet, error) {
 	}
 }
 func (r *Record) Release(id string) error {
-	r.allocRecord.DeleteInverse(id)
+	r.AllocRecord.DeleteInverse(id)
 	return nil
 }
 func (r *Record) GetIPByID(id string) (net.IP, bool) {
-	ipString, ok := r.allocRecord.GetInverse(id)
+	ipString, ok := r.AllocRecord.GetInverse(id)
 	if !ok {
 		return nil, false
 	}

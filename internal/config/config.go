@@ -130,6 +130,7 @@ func (s *PlugStorage) load() bool {
 			log.Log.Error("Invalid Network", err)
 			return false
 		}
+		log.Log.Debug("New Ipv4Record")
 		s.Ipv4Record = ipam.New(subnet)
 		return s.store()
 	}
