@@ -19,7 +19,7 @@ type Record struct {
 }
 
 func New(subnet *net.IPNet) *Record {
-	return &Record{Cidr: (*types.IPNet)(subnet)}
+	return &Record{Cidr: (*types.IPNet)(subnet), allocRecord: bimap.BiMap[string, string]{}}
 }
 func (r *Record) getInnerIPNet() *net.IPNet {
 	return (*net.IPNet)(r.Cidr)
