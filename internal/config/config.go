@@ -21,7 +21,7 @@ const (
 )
 
 type PlugStorage struct {
-	Ipv4Record *ipam.Record         `json:"ipv4"`
+	Ipv4Record *ipam.Record
 	Mtx        *filemutex.FileMutex `json:"-"`
 }
 type Cfg struct {
@@ -39,7 +39,7 @@ func LoadCfg(data []byte) (*Cfg, error) {
 	}
 	return cfg, nil
 }
-func newFileMutex(lockPath string) (*filemutex.FileMutex, error) {
+func NewFileMutex(lockPath string) (*filemutex.FileMutex, error) {
 	stat, err := os.Stat(lockPath)
 	if err != nil {
 		return nil, err
@@ -74,37 +74,37 @@ func LoadStorage() (*PlugStorage, error) {
 		log.Log.Debugf("%#v", err)
 		return nil, err
 	}
-	mtx, err := newFileMutex(StoragePath)
+	mtx, err := NewFileMutex(StoragePath)
 	if err != nil {
 		log.Log.Debug(err)
 		return nil, err
 	}
 	storage := &PlugStorage{Mtx: mtx}
-	storage.Lock()
+	storage.lock()
 	ok := storage.load()
 	if !ok {
-		storage.Unlock()
+		storage.unlock()
 		log.Log.Fatal("load failed")
 	}
-	storage.Unlock()
+	storage.unlock()
 	return storage, nil
 }
-func (s *PlugStorage) Lock() {
+func (s *PlugStorage) lock() {
 	err := s.Mtx.Lock()
 	if err != nil {
-		log.Log.Fatal("FileMutex Lock Failed:", err)
+		log.Log.Fatal("FileMutex lock Failed:", err)
 	}
 }
-func (s *PlugStorage) Unlock() {
+func (s *PlugStorage) unlock() {
 	err := s.Mtx.Unlock()
 	if err != nil {
-		log.Log.Fatal("FileMutex Lock Failed:", err)
+		log.Log.Fatal("FileMutex lock Failed:", err)
 	}
 }
 func (s *PlugStorage) load() bool {
 	data, err := os.ReadFile(StoragePath)
 	if err != nil {
-		s.Unlock()
+		s.unlock()
 		log.Log.Fatal("Read Config Failed", err)
 	}
 	if len(data) < 2 {
@@ -145,6 +145,7 @@ func (s *PlugStorage) store() bool {
 		log.Log.Error("Encode failed:", err)
 		return false
 	}
+	log.Log.Debug("Encode data:", data)
 	if err = os.WriteFile(StoragePath, data, 0644); err != nil {
 		log.Log.Error("Write Config Failed: ", err, "\ndata:", data)
 		return false
@@ -152,18 +153,18 @@ func (s *PlugStorage) store() bool {
 	return true
 }
 func (s *PlugStorage) AtomicDo(inner func() error) error {
-	s.Lock()
+	s.lock()
 	ok := s.load()
 	if !ok {
-		s.Unlock()
+		s.unlock()
 		log.Log.Fatal("load failed")
 	}
 	err := inner()
 	ok = s.store()
 	if !ok {
-		s.Unlock()
+		s.unlock()
 		log.Log.Fatal("store failed")
 	}
-	s.Unlock()
+	s.unlock()
 	return err
 }
