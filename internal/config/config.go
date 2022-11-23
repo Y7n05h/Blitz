@@ -80,7 +80,7 @@ func LoadStorage() (*PlugStorage, error) {
 		return nil, err
 	}
 	storage := &PlugStorage{Mtx: mtx}
-	storage.Load()
+	storage.load()
 	return storage, nil
 }
 func (s *PlugStorage) Lock() {
@@ -95,8 +95,7 @@ func (s *PlugStorage) Unlock() {
 		log.Log.Fatal("FileMutex Lock Failed:", err)
 	}
 }
-func (s *PlugStorage) Load() {
-	s.Lock()
+func (s *PlugStorage) load() bool {
 	data, err := os.ReadFile(StoragePath)
 	if err != nil {
 		s.Unlock()
@@ -109,41 +108,56 @@ func (s *PlugStorage) Load() {
 		//json.Unmarshal()
 		data, err := os.ReadFile(PlugNetworkCfgPath)
 		if err != nil {
-			log.Log.Fatal("Read Plug Network Cfg Failed", err)
+			log.Log.Error("Read Plug Network Cfg Failed", err)
+			return false
 		}
 		if len(data) < 2 {
-			log.Log.Fatal("Empty Plug Network Cfg")
+			log.Log.Error("Empty Plug Network Cfg")
+			return false
 		}
 		if err = json.Unmarshal(data, cfg); err != nil {
-			log.Log.Fatal("Decode Plug Network failed", err)
+			log.Log.Error("Decode Plug Network failed", err)
+			return false
 		}
 		_, subnet, err := net.ParseCIDR(cfg.Network)
 		if err != nil {
-			log.Log.Fatal("Invalid Network", err)
+			log.Log.Error("Invalid Network", err)
+			return false
 		}
 		s.Ipv4Record = ipam.New(subnet)
-		return
+		return s.store()
 	}
 	if err = json.Unmarshal(data, s); err != nil {
-		s.Unlock()
-		log.Log.Fatal("Decode Config Failed:", err, "json:", data)
+		log.Log.Error("Decode Config Failed:", err, "json:", data)
+		return false
 	}
+	return true
 }
-func (s *PlugStorage) Store() {
+func (s *PlugStorage) store() bool {
 	data, err := json.Marshal(s)
 	if err != nil {
-		s.Unlock()
-		log.Log.Fatal("Encode failed:", err)
+		log.Log.Error("Encode failed:", err)
+		return false
 	}
 	if err = os.WriteFile(StoragePath, data, 0644); err != nil {
-		s.Unlock()
-		log.Log.Fatal("Write Config Failed: ", err, "\ndata:", data)
+		log.Log.Error("Write Config Failed: ", err, "\ndata:", data)
+		return false
 	}
-	s.Unlock()
+	return true
 }
 func (s *PlugStorage) AtomicDo(inner func() error) error {
-	s.Load()
+	s.Lock()
+	ok := s.load()
+	if !ok {
+		s.Unlock()
+		log.Log.Fatal("load failed")
+	}
 	err := inner()
-	s.Store()
+	ok = s.store()
+	if !ok {
+		s.Unlock()
+		log.Log.Fatal("store failed")
+	}
+	s.Unlock()
 	return err
 }
