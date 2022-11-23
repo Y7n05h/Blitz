@@ -33,6 +33,7 @@ func (r Record) Marshal() []byte {
 	return data
 }
 func (r *Record) Unmarshal(data []byte) error {
+	log.Log.Debug("Unmarshal Record Begin")
 	record := &struct {
 		Cidr        net.IPNet
 		AllocRecord map[string]string
@@ -41,8 +42,12 @@ func (r *Record) Unmarshal(data []byte) error {
 		return err
 	}
 	r.Cidr = (*types.IPNet)(&record.Cidr)
-	r.AllocRecord = bimap.NewBiMapFromMap[string, string](record.AllocRecord)
-	log.Log.Debug("Unmarshal Record")
+	if record.AllocRecord == nil {
+		r.AllocRecord = bimap.NewBiMapFromMap[string, string](record.AllocRecord)
+	} else {
+		r.AllocRecord = bimap.NewBiMap[string, string]()
+	}
+	log.Log.Debug("Unmarshal Record Finished")
 	return nil
 }
 func New(subnet *net.IPNet) *Record {
@@ -112,7 +117,9 @@ func (r *Record) Alloc(id string) (*net.IPNet, error) {
 	}
 }
 func (r *Record) Release(id string) error {
+	log.Log.Debug("Release id")
 	r.AllocRecord.DeleteInverse(id)
+	log.Log.Debug("Release id Done")
 	return nil
 }
 func (r *Record) GetIPByID(id string) (net.IP, bool) {

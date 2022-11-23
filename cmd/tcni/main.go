@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net"
+	"os"
 	"runtime"
 	"tiny_cni/internal/config"
 	"tiny_cni/internal/constexpr"
@@ -85,35 +87,48 @@ func cmdDel(args *skel.CmdArgs) error {
 	//	return err
 	//}
 	storage, err := config.LoadStorage()
+	log.Log.Debug("Load Storage Finished")
 	if err != nil {
 		return err
 	}
+	log.Log.Debug("Load Storage Success")
 	netns, err := ns.GetNS(args.Netns)
-	if err != nil {
-		return fmt.Errorf("get netns failed")
-	}
-	err = bridge.DelVeth(netns, args.IfName)
-	if err != nil {
+	if err == nil {
+		log.Log.Debug("Get Namespace Success,Del Veth")
+		err = bridge.DelVeth(netns, args.IfName)
+		if err != nil {
+			return err
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
+	log.Log.Debug("Done Release IP")
 	err = storage.AtomicDo(func() error {
 		return storage.Ipv4Record.Release(args.ContainerID)
 	})
 	if err != nil {
 		return err
 	}
+
+	log.Log.Debug("[cmdDel]Success")
 	return nil
 }
 func cmdCheck(args *skel.CmdArgs) error {
 	log.Log.Debugf("[cmdCheck]args:%#v", *args)
 	storage, err := config.LoadStorage()
+	log.Log.Debug("Load Storage Finished")
 	if err != nil {
 		return err
 	}
+	log.Log.Debug("Load Storage Success")
 	ip, ok := storage.Ipv4Record.GetIPByID(args.ContainerID)
 	if !ok {
-		return fmt.Errorf("can not found IP")
+		//TODO
+		log.Log.Debug("Get IP by ID failed")
+		//return fmt.Errorf("can not found IP")
+		return nil
 	}
+	log.Log.Debug("Get NS")
 	netns, err := ns.GetNS(args.Netns)
 	if err != nil {
 		return err
@@ -122,7 +137,7 @@ func cmdCheck(args *skel.CmdArgs) error {
 		IP:   ip,
 		Mask: storage.Ipv4Record.Mask(),
 	}
-	return netns.Do(func(_ ns.NetNS) error {
+	err = netns.Do(func(_ ns.NetNS) error {
 		veth, err := netlink.LinkByName(args.IfName)
 		if err != nil {
 			return err
@@ -132,6 +147,8 @@ func cmdCheck(args *skel.CmdArgs) error {
 		}
 		return nil
 	})
+	log.Log.Debug("[Check]Success")
+	return err
 }
 func main() {
 	log.Log.Debug("[exec]")
