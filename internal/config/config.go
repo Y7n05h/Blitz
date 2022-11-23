@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"net"
 	"os"
 	"path"
 	"tiny_cni/internal/log"
@@ -13,9 +14,10 @@ import (
 )
 
 const (
-	StorageDir      = "/run/tcni/"
-	StorageFileName = "config.json"
-	StoragePath     = StorageDir + StorageFileName
+	StorageDir         = "/run/tcni/"
+	StorageFileName    = "config.json"
+	StoragePath        = StorageDir + StorageFileName
+	PlugNetworkCfgPath = "/etc/cni/net/net-conf.json"
 )
 
 type PlugStorage struct {
@@ -24,6 +26,10 @@ type PlugStorage struct {
 }
 type Cfg struct {
 	types.NetConf
+}
+type PlugNetworkCfg struct {
+	Network string
+	Backend map[string]string
 }
 
 func LoadCfg(data []byte) (*Cfg, error) {
@@ -98,11 +104,29 @@ func (s *PlugStorage) Load() {
 	}
 	if len(data) < 2 {
 		log.Log.Warn("Empty Config: May be first run this plug in this node?")
+		//s.Ipv4Record = s.
+		cfg := &PlugNetworkCfg{}
+		//json.Unmarshal()
+		data, err := os.ReadFile(PlugNetworkCfgPath)
+		if err != nil {
+			log.Log.Fatal("Read Plug Network Cfg Failed", err)
+		}
+		if len(data) < 2 {
+			log.Log.Fatal("Empty Plug Network Cfg")
+		}
+		if err = json.Unmarshal(data, cfg); err != nil {
+			log.Log.Fatal("Decode Plug Network failed", err)
+		}
+		_, subnet, err := net.ParseCIDR(cfg.Network)
+		if err != nil {
+			log.Log.Fatal("Invalid Network", err)
+		}
+		s.Ipv4Record = ipam.New(subnet)
 		return
 	}
 	if err = json.Unmarshal(data, s); err != nil {
 		s.Unlock()
-		log.Log.Fatal("Encode Config Failed:", err, "json:", data)
+		log.Log.Fatal("Decode Config Failed:", err, "json:", data)
 	}
 }
 func (s *PlugStorage) Store() {

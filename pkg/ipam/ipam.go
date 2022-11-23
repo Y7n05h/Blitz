@@ -18,6 +18,9 @@ type Record struct {
 	allocRecord bimap.BiMap[string, string]
 }
 
+func New(subnet *net.IPNet) *Record {
+	return &Record{Cidr: (*types.IPNet)(subnet)}
+}
 func (r *Record) getInnerIPNet() *net.IPNet {
 	return (*net.IPNet)(r.Cidr)
 }
