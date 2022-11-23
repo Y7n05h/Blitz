@@ -48,6 +48,13 @@ data:
       "type": "tcni",
       "dataDir": "/var/lib/cni/networks"
     }
+  net-conf.json: |
+    {
+      "Network": "10.244.0.0/16",
+      "Backend": {
+        "Type": "vxlan"
+      }
+    }
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -109,6 +116,20 @@ spec:
           mountPath: /etc/cni/net.d
         - name: tcni-cfg
           mountPath: /etc/kube-tcni/
+      - name: install-net-cfg
+        image: tcni:dedc3c8
+        imagePullPolicy: Never
+        command:
+          - cp
+        args:
+          - -f
+          - /etc/kube-tcni/net-conf.json
+          - /etc/cni/net/net-conf.json
+        volumeMounts:
+          - name: net-cfg
+            mountPath: /etc/cni/net/
+          - name: tcni-cfg
+            mountPath: /etc/kube-tcni/
       containers:
       - name: kube-tcni
         image: tcni:dedc3c8
@@ -151,6 +172,9 @@ spec:
       - name: cni
         hostPath:
           path: /etc/cni/net.d
+      - name: net-cfg
+        hostPath:
+          path: /etc/cni/net
       - name: tcni-cfg
         configMap:
           name: kube-tcni-cfg
