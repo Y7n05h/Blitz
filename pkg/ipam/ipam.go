@@ -1,6 +1,7 @@
 package ipam
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -15,11 +16,36 @@ import (
 type Record struct {
 	Cidr *types.IPNet
 	//	IP  -> ID
-	allocRecord bimap.BiMap[string, string]
+	allocRecord *bimap.BiMap[string, string]
 }
 
+func (r Record) Marshal() []byte {
+	data, err := json.Marshal(&struct {
+		Cidr        net.IPNet
+		AllocRecord map[string]string
+	}{
+		Cidr:        *r.getInnerIPNet(),
+		AllocRecord: r.allocRecord.GetForwardMap(),
+	})
+	if err != nil {
+		log.Log.Fatal("Encode failed")
+	}
+	return data
+}
+func (r *Record) Unmarshal(data []byte) error {
+	record := &struct {
+		Cidr        net.IPNet
+		AllocRecord map[string]string
+	}{}
+	if err := json.Unmarshal(data, record); err != nil {
+		return err
+	}
+	r.Cidr = (*types.IPNet)(&record.Cidr)
+	r.allocRecord = bimap.NewBiMapFromMap[string, string](record.AllocRecord)
+	return nil
+}
 func New(subnet *net.IPNet) *Record {
-	return &Record{Cidr: (*types.IPNet)(subnet), allocRecord: bimap.BiMap[string, string]{}}
+	return &Record{Cidr: (*types.IPNet)(subnet), allocRecord: bimap.NewBiMap[string, string]()}
 }
 func (r *Record) getInnerIPNet() *net.IPNet {
 	return (*net.IPNet)(r.Cidr)
