@@ -80,7 +80,13 @@ func LoadStorage() (*PlugStorage, error) {
 		return nil, err
 	}
 	storage := &PlugStorage{Mtx: mtx}
-	storage.load()
+	storage.Lock()
+	ok := storage.load()
+	if !ok {
+		storage.Unlock()
+		log.Log.Fatal("load failed")
+	}
+	storage.Unlock()
 	return storage, nil
 }
 func (s *PlugStorage) Lock() {

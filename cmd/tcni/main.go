@@ -110,7 +110,6 @@ func cmdCheck(args *skel.CmdArgs) error {
 	if err != nil {
 		return err
 	}
-	defer storage.Store()
 	ip, ok := storage.Ipv4Record.GetIPByID(args.ContainerID)
 	if !ok {
 		return fmt.Errorf("can not found IP")
