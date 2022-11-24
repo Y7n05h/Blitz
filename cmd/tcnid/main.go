@@ -7,9 +7,8 @@ import (
 	"tiny_cni/internal/Reconciler"
 	"tiny_cni/internal/config"
 	"tiny_cni/internal/constexpr"
+	"tiny_cni/internal/ipnet"
 	"tiny_cni/internal/log"
-
-	"github.com/containernetworking/cni/pkg/types"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -27,7 +26,7 @@ func init() {
 	flag.StringVar(&FlagsValue.clusterCIDR, "ClusterCIDR", "", "")
 }
 func main() {
-	log.InitLog(constexpr.EnableLog, true, "tcnid")
+	log.InitLog(constexpr.EnableLog, false, "tcnid")
 	log.Log.Debugf("tcnid,start")
 	flag.Parse()
 	log.Log.Debugf("flags:%#v", FlagsValue)
@@ -52,15 +51,15 @@ func main() {
 	if err != nil {
 		log.Log.Fatal("Get Node CIDR Failed")
 	}
-	clusterCIDR, err := types.ParseCIDR(FlagsValue.clusterCIDR)
+	clusterCIDR, err := ipnet.ParseCIDR(FlagsValue.clusterCIDR)
 	if err != nil {
 		log.Log.Fatal("Parse clusterCIDR Error:", err)
 	}
 	log.Log.Debugf("Parse CIDR Success! PodCIDR:%s ClusterCIDR:%s", podCIDR.String(), clusterCIDR.String())
 	if FlagsValue.nwCfgGen {
 		cfg := config.PlugNetworkCfg{
-			ClusterCIDR: *(*types.IPNet)(clusterCIDR),
-			NodeCIDR:    *(*types.IPNet)(podCIDR),
+			ClusterCIDR: *clusterCIDR,
+			NodeCIDR:    *podCIDR,
 		}
 		err = cfg.StoreNetworkCfg()
 		if err != nil {

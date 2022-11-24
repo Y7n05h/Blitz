@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"tiny_cni/internal/config"
+	"tiny_cni/internal/ipnet"
 	"tiny_cni/internal/log"
 	"tiny_cni/pkg/bridge"
 
@@ -20,16 +21,16 @@ type Reconciler struct {
 	Clientset  *kubernetes.Clientset
 	CniStorage *config.PlugStorage
 	PodName    string
-	HostCidr   net.IPNet
+	HostCidr   ipnet.IPNet
 	Link       netlink.Link
 }
 
-func GetPodCIDR(node *corev1.Node) (*net.IPNet, error) {
+func GetPodCIDR(node *corev1.Node) (*ipnet.IPNet, error) {
 	if len(node.Spec.PodCIDR) == 0 {
 		return nil, fmt.Errorf("get PodCIDR Failed")
 	}
 	_, ip, err := net.ParseCIDR(node.Spec.PodCIDR)
-	return ip, err
+	return ipnet.FromNetIPNet(ip), err
 }
 func GetCurrentNode(clientset *kubernetes.Clientset, podName string) (*corev1.Node, error) {
 	node, err := clientset.CoreV1().Nodes().Get(context.TODO(), podName, v1.GetOptions{})

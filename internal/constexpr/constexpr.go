@@ -14,5 +14,5 @@ const (
 	VxlanId    = 666
 	VXLANPort  = 12564
 	VXLANGroup = "239.1.1.1"
-	VXLANName  = "tcni"
+	VXLANName  = "tnet"
 )

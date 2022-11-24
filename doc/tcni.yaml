@@ -91,7 +91,7 @@ spec:
       serviceAccountName: tcni
       initContainers:
 #      - name: install-cni-plugin
-#        image: tcni:dedc3c8
+#        image: tcni:143010d
 #        imagePullPolicy: Never
 #        command:
 #        - cp
@@ -103,7 +103,7 @@ spec:
 #        - name: cni-plugin
 #          mountPath: /opt/cni/bin
       - name: install-cni
-        image: tcni:dedc3c8
+        image: tcni:143010d
         imagePullPolicy: Never
         command:
         - cp
@@ -117,7 +117,7 @@ spec:
         - name: tcni-cfg
           mountPath: /etc/kube-tcni/
       - name: install-net-cfg
-        image: tcni:dedc3c8
+        image: tcni:143010d
         imagePullPolicy: Never
         command:
           - /opt/bin/tcnid
@@ -132,17 +132,17 @@ spec:
         volumeMounts:
           - name: run
             mountPath: /run/tcni
+          - name: tmp
+            mountPath: /tmp
       containers:
       - name: kube-tcni
-        image: tcni:dedc3c8
+        image: tcni:143010d
         imagePullPolicy: Never
         command:
         - /opt/bin/tcnid
         args:
         # get cluster cidr from kube-controller-manager
         - --ClusterCIDR=10.244.0.0/16
-        - --node=$(NODE_NAME)
-        - --enable-iptables
         resources:
           requests:
             cpu: "100m"
@@ -164,6 +164,8 @@ spec:
           mountPath: /run/tcni
         - name: tcni-cfg
           mountPath: /etc/kube-tcni/
+        - name: tmp
+          mountPath: /tmp
       volumes:
       - name: run
         hostPath:
@@ -174,6 +176,9 @@ spec:
       - name: cni
         hostPath:
           path: /etc/cni/net.d
+      - name: tmp
+        hostPath:
+          path: /tmp
       - name: tcni-cfg
         configMap:
           name: kube-tcni-cfg
