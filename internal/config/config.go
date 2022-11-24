@@ -18,6 +18,7 @@ const (
 	StorageFileName    = "config.json"
 	StoragePath        = StorageDir + StorageFileName
 	PlugNetworkCfgPath = "/etc/cni/net/net-conf.json"
+	FilePerm           = 0644
 )
 
 type PlugStorage struct {
@@ -28,10 +29,39 @@ type Cfg struct {
 	types.NetConf
 }
 type PlugNetworkCfg struct {
-	Network string
-	Backend map[string]string
+	ClusterCIDR types.IPNet
+	NodeCIDR    types.IPNet
 }
 
+func loadPlugNetworkCfg() *PlugNetworkCfg {
+	cfg := &PlugNetworkCfg{}
+	//json.Unmarshal()
+	data, err := os.ReadFile(PlugNetworkCfgPath)
+	if err != nil {
+		log.Log.Error("Read Plug Network Cfg Failed", err)
+		return nil
+	}
+	if len(data) < 2 {
+		log.Log.Error("Empty Plug Network Cfg")
+		return nil
+	}
+	if err = json.Unmarshal(data, cfg); err != nil {
+		log.Log.Error("Decode Plug Network failed", err)
+		return nil
+	}
+	return cfg
+}
+func (p *PlugNetworkCfg) StoreNetworkCfg() error {
+	data, err := json.Marshal(p)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(PlugNetworkCfgPath, data, FilePerm)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func LoadCfg(data []byte) (*Cfg, error) {
 	cfg := &Cfg{}
 	if err := json.Unmarshal(data, cfg); err != nil {
@@ -39,7 +69,7 @@ func LoadCfg(data []byte) (*Cfg, error) {
 	}
 	return cfg, nil
 }
-func NewFileMutex(lockPath string) (*filemutex.FileMutex, error) {
+func newFileMutex(lockPath string) (*filemutex.FileMutex, error) {
 	stat, err := os.Stat(lockPath)
 	if err != nil {
 		return nil, err
@@ -74,7 +104,7 @@ func LoadStorage() (*PlugStorage, error) {
 		log.Log.Debugf("%#v", err)
 		return nil, err
 	}
-	mtx, err := NewFileMutex(StoragePath)
+	mtx, err := newFileMutex(StoragePath)
 	if err != nil {
 		log.Log.Debug(err)
 		return nil, err
@@ -110,26 +140,11 @@ func (s *PlugStorage) load() bool {
 	if len(data) < 2 {
 		log.Log.Warn("Empty Config: May be first run this plug in this node?")
 		//s.Ipv4Record = s.
-		cfg := &PlugNetworkCfg{}
-		//json.Unmarshal()
-		data, err := os.ReadFile(PlugNetworkCfgPath)
-		if err != nil {
-			log.Log.Error("Read Plug Network Cfg Failed", err)
+		plugNetworkCfg := loadPlugNetworkCfg()
+		if plugNetworkCfg == nil {
 			return false
 		}
-		if len(data) < 2 {
-			log.Log.Error("Empty Plug Network Cfg")
-			return false
-		}
-		if err = json.Unmarshal(data, cfg); err != nil {
-			log.Log.Error("Decode Plug Network failed", err)
-			return false
-		}
-		_, subnet, err := net.ParseCIDR(cfg.Network)
-		if err != nil {
-			log.Log.Error("Invalid Network", err)
-			return false
-		}
+		subnet := (*net.IPNet)(&plugNetworkCfg.NodeCIDR)
 		s.Ipv4Record = ipam.New(subnet)
 		log.Log.Debug("New Ipv4Record: ", s)
 		return s.store()

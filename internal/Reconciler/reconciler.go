@@ -31,7 +31,7 @@ func GetPodCIDR(node *corev1.Node) (*net.IPNet, error) {
 	_, ip, err := net.ParseCIDR(node.Spec.PodCIDR)
 	return ip, err
 }
-func NewReconciler(clientset *kubernetes.Clientset, cniStorage *config.PlugStorage, podName string) (*Reconciler, error) {
+func GetCurrentNode(clientset *kubernetes.Clientset, podName string) (*corev1.Node, error) {
 	node, err := clientset.CoreV1().Nodes().Get(context.TODO(), podName, v1.GetOptions{})
 	if err != nil {
 		log.Log.Error("Get Node Info Failed:", err)
@@ -39,6 +39,13 @@ func NewReconciler(clientset *kubernetes.Clientset, cniStorage *config.PlugStora
 	}
 	if node == nil {
 		return nil, fmt.Errorf("invaild node")
+	}
+	return node, nil
+}
+func NewReconciler(clientset *kubernetes.Clientset, cniStorage *config.PlugStorage, podName string) (*Reconciler, error) {
+	node, err := GetCurrentNode(clientset, podName)
+	if err != nil {
+		return nil, err
 	}
 	cidr, err := GetPodCIDR(node)
 	if err != nil {

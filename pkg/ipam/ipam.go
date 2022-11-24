@@ -22,7 +22,7 @@ type Record struct {
 	AllocRecord *bimap.BiMap[string, string]
 }
 
-func (r *Record) MarshalJSON() ([]byte, error) {
+func (r Record) MarshalJSON() ([]byte, error) {
 	log.Log.Debug("Marshal Record Begin")
 	data, err := json.Marshal(&struct {
 		Cidr        types.IPNet
