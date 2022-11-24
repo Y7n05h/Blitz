@@ -50,7 +50,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	gateway := storage.Ipv4Record.Gateway()
 	br, err := bridge.GetBridge(gateway)
 	if err != nil {
-		log.Log.Debug("Err:", err)
+		log.Log.Debugf("Err:%#v", err)
 		return err
 	}
 	if br == nil {
@@ -97,6 +97,7 @@ func cmdDel(args *skel.CmdArgs) error {
 		log.Log.Debug("Get Namespace Success,Del Veth")
 		err = bridge.DelVeth(netns, args.IfName)
 		if err != nil {
+			log.Log.Debug("Del Veth failed: ", err)
 			return err
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {

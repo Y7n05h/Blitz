@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -34,13 +35,17 @@ func CheckLinkContainIPNNet(gateway *net.IPNet, br netlink.Link) bool {
 	return false
 }
 func GetBridge(gateway *net.IPNet) (netlink.Link, error) {
-	if br, err := netlink.LinkByName(constexpr.BridgeName); err != nil {
-		return nil, err
-	} else {
+	var linkErr *netlink.LinkNotFoundError
+	if br, err := netlink.LinkByName(constexpr.BridgeName); err == nil {
 		if br != nil && CheckLinkContainIPNNet(gateway, br) {
 			return br, nil
 		}
+		log.Log.Fatal("Not Expect Link: gateway not same")
+	} else if !errors.As(err, &linkErr) {
+		log.Log.Warnf("Not Expect Link Error:%v", err)
+		return nil, err
 	}
+	log.Log.Fatal("Bridge: No Bridge, Create New Bridge")
 	br := &netlink.Bridge{
 		LinkAttrs: netlink.LinkAttrs{
 			Name:   constexpr.BridgeName,
@@ -137,13 +142,22 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *net.IPNet,
 func DelVeth(netns ns.NetNS, ifName string) error {
 	return netns.Do(func(_ ns.NetNS) error {
 		veth, err := netlink.LinkByName(ifName)
-		if err == os.ErrExist {
+		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		}
 		if err != nil {
+			log.Log.Errorf("Get Link Error:%#v", err)
 			return err
 		}
-		return netlink.LinkDel(veth)
+		if veth == nil {
+			log.Log.Errorf("invlid veth ifName:%s", ifName)
+			return nil
+		}
+		err = netlink.LinkDel(veth)
+		if err != nil {
+			log.Log.Errorf("Del veth(%s):%#v failed:%#v ", ifName, veth.Attrs(), err)
+		}
+		return nil
 	})
 }
 func LinkByIP(ip *net.IPNet) (netlink.Link, error) {

@@ -13,35 +13,40 @@ import (
 	"github.com/vishalkuo/bimap"
 )
 
+var _ json.Unmarshaler = (*Record)(nil)
+var _ json.Marshaler = (*Record)(nil)
+
 type Record struct {
 	Cidr *types.IPNet
 	//	IP  -> ID
 	AllocRecord *bimap.BiMap[string, string]
 }
 
-func (r Record) Marshal() []byte {
+func (r *Record) MarshalJSON() ([]byte, error) {
+	log.Log.Debug("Marshal Record Begin")
 	data, err := json.Marshal(&struct {
-		Cidr        net.IPNet
+		Cidr        types.IPNet
 		AllocRecord map[string]string
 	}{
-		Cidr:        *r.getInnerIPNet(),
+		Cidr:        *r.Cidr,
 		AllocRecord: r.AllocRecord.GetForwardMap(),
 	})
 	if err != nil {
 		log.Log.Fatal("Encode failed")
 	}
-	return data
+	log.Log.Debug("Marshal Record Finished")
+	return data, nil
 }
-func (r *Record) Unmarshal(data []byte) error {
+func (r *Record) UnmarshalJSON(data []byte) error {
 	log.Log.Debug("Unmarshal Record Begin")
 	record := &struct {
-		Cidr        net.IPNet
+		Cidr        types.IPNet
 		AllocRecord map[string]string
 	}{}
 	if err := json.Unmarshal(data, record); err != nil {
 		return err
 	}
-	r.Cidr = (*types.IPNet)(&record.Cidr)
+	r.Cidr = &record.Cidr
 	if record.AllocRecord == nil {
 		r.AllocRecord = bimap.NewBiMapFromMap[string, string](record.AllocRecord)
 	} else {
@@ -127,9 +132,9 @@ func (r *Record) GetIPByID(id string) (net.IP, bool) {
 	if !ok {
 		return nil, false
 	}
-	ip, _, err := net.ParseCIDR(ipString)
-	if err != nil {
-		log.Log.Error("Parse Error")
+	ip := net.ParseIP(ipString)
+	if ip == nil {
+		log.Log.Errorf("Parse Error:%s", ipString)
 		return nil, false
 	}
 	return ip, true
