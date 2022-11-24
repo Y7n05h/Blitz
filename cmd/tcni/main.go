@@ -3,11 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"net"
 	"os"
 	"runtime"
 	"tiny_cni/internal/config"
 	"tiny_cni/internal/constexpr"
+	"tiny_cni/internal/ipnet"
 	"tiny_cni/internal/log"
 	"tiny_cni/pkg/bridge"
 
@@ -35,7 +35,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 	log.Log.Debug("[Success]LoadStorage")
-	var ip *net.IPNet
+	var ip *ipnet.IPNet
 	err = storage.AtomicDo(func() error {
 		var err error
 		ip, err = storage.Ipv4Record.Alloc(args.ContainerID)
@@ -47,7 +47,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 	log.Log.Debug("[Success]Alloc IP")
-	gateway := storage.Ipv4Record.Gateway()
+	gateway := storage.Ipv4Record.GetGateway()
 	br, err := bridge.GetBridge(gateway)
 	if err != nil {
 		log.Log.Debugf("Err:%#v", err)
@@ -68,10 +68,14 @@ func cmdAdd(args *skel.CmdArgs) error {
 		log.Log.Debug("Err:", err)
 		return err
 	}
+	if err := bridge.SetupVXLAN(br); err != nil {
+		log.Log.Debug("Error:", err)
+		return err
+	}
 	result := types100.Result{
 		IPs: []*types100.IPConfig{
 			{
-				Address: *ip,
+				Address: *ip.ToNetIPNet(),
 				Gateway: gateway.IP,
 			},
 		},
@@ -122,7 +126,7 @@ func cmdCheck(args *skel.CmdArgs) error {
 		return err
 	}
 	log.Log.Debug("Load Storage Success")
-	ip, ok := storage.Ipv4Record.GetIPByID(args.ContainerID)
+	ipNet, ok := storage.Ipv4Record.GetIPByID(args.ContainerID)
 	if !ok {
 		//TODO
 		log.Log.Debug("Get IP by ID failed")
@@ -133,10 +137,6 @@ func cmdCheck(args *skel.CmdArgs) error {
 	netns, err := ns.GetNS(args.Netns)
 	if err != nil {
 		return err
-	}
-	ipNet := &net.IPNet{
-		IP:   ip,
-		Mask: storage.Ipv4Record.Mask(),
 	}
 	err = netns.Do(func(_ ns.NetNS) error {
 		veth, err := netlink.LinkByName(args.IfName)

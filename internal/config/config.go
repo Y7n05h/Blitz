@@ -3,9 +3,9 @@ package config
 import (
 	"encoding/json"
 	"errors"
-	"net"
 	"os"
 	"path"
+	"tiny_cni/internal/ipnet"
 	"tiny_cni/internal/log"
 	"tiny_cni/pkg/ipam"
 
@@ -17,20 +17,21 @@ const (
 	StorageDir         = "/run/tcni/"
 	StorageFileName    = "config.json"
 	StoragePath        = StorageDir + StorageFileName
-	PlugNetworkCfgPath = StoragePath + "net-conf.json"
+	PlugNetworkCfgPath = StorageDir + "net-conf.json"
 	FilePerm           = 0644
 )
 
 type PlugStorage struct {
 	Ipv4Record *ipam.Record
 	Mtx        *filemutex.FileMutex `json:"-"`
+	PlugNetworkCfg
 }
 type Cfg struct {
 	types.NetConf
 }
 type PlugNetworkCfg struct {
-	ClusterCIDR types.IPNet
-	NodeCIDR    types.IPNet
+	ClusterCIDR ipnet.IPNet
+	NodeCIDR    ipnet.IPNet
 }
 
 func loadPlugNetworkCfg() *PlugNetworkCfg {
@@ -120,12 +121,14 @@ func LoadStorage() (*PlugStorage, error) {
 	return storage, nil
 }
 func (s *PlugStorage) lock() {
+	log.Log.Debugf("[LOCK]")
 	err := s.Mtx.Lock()
 	if err != nil {
 		log.Log.Fatal("FileMutex lock Failed:", err)
 	}
 }
 func (s *PlugStorage) unlock() {
+	log.Log.Debugf("[UNLOCK]")
 	err := s.Mtx.Unlock()
 	if err != nil {
 		log.Log.Fatal("FileMutex lock Failed:", err)
@@ -144,15 +147,18 @@ func (s *PlugStorage) load() bool {
 		if plugNetworkCfg == nil {
 			return false
 		}
-		subnet := (*net.IPNet)(&plugNetworkCfg.NodeCIDR)
-		s.Ipv4Record = ipam.New(subnet)
-		log.Log.Debug("New Ipv4Record: ", s)
+		log.Log.Debugf("Get NodeCIDR: %s", plugNetworkCfg.NodeCIDR.IP.String())
+		s.Ipv4Record = ipam.New(&plugNetworkCfg.NodeCIDR, &plugNetworkCfg.ClusterCIDR)
+		s.ClusterCIDR = plugNetworkCfg.ClusterCIDR
+		s.NodeCIDR = plugNetworkCfg.NodeCIDR
+		log.Log.Debugf("New Ipv4Record: %#v", s)
 		return s.store()
 	}
 	if err = json.Unmarshal(data, s); err != nil {
 		log.Log.Error("Decode Config Failed:", err, "json:", data)
 		return false
 	}
+	log.Log.Debugf("Load Plug Storage Success: %s", data)
 	return true
 }
 func (s *PlugStorage) store() bool {
@@ -166,6 +172,7 @@ func (s *PlugStorage) store() bool {
 		log.Log.Error("Write Config Failed: ", err, "\ndata:", data)
 		return false
 	}
+	log.Log.Debugf("Store Plug Storage Success: %s", data)
 	return true
 }
 func (s *PlugStorage) AtomicDo(inner func() error) error {
