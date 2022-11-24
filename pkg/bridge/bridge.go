@@ -35,7 +35,7 @@ func CheckLinkContainIPNNet(gateway *net.IPNet, br netlink.Link) bool {
 	return false
 }
 func GetBridge(gateway *net.IPNet) (netlink.Link, error) {
-	var linkErr *netlink.LinkNotFoundError
+	var linkErr netlink.LinkNotFoundError
 	if br, err := netlink.LinkByName(constexpr.BridgeName); err == nil {
 		if br != nil && CheckLinkContainIPNNet(gateway, br) {
 			return br, nil
@@ -45,7 +45,7 @@ func GetBridge(gateway *net.IPNet) (netlink.Link, error) {
 		log.Log.Warnf("Not Expect Link Error:%v", err)
 		return nil, err
 	}
-	log.Log.Fatal("Bridge: No Bridge, Create New Bridge")
+	log.Log.Debug("Bridge: No Bridge, Create New Bridge")
 	br := &netlink.Bridge{
 		LinkAttrs: netlink.LinkAttrs{
 			Name:   constexpr.BridgeName,
