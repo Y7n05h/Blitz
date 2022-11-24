@@ -10,11 +10,13 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func getLogEncoder() zapcore.EncoderConfig {
+func getLogEncoder(useTerminal bool) zapcore.EncoderConfig {
 
 	encoderCfg := zap.NewDevelopmentEncoderConfig()
+	if useTerminal {
+		encoderCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	}
 	encoderCfg.EncodeTime = zapcore.RFC3339NanoTimeEncoder
-	encoderCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	return encoderCfg
 }
 
@@ -22,14 +24,14 @@ var (
 	Log *zap.SugaredLogger
 )
 
-func InitLog(enableLog bool, useTerminal bool) {
+func InitLog(enableLog bool, useTerminal bool, prefix string) {
 	if !enableLog {
 		Log = zap.NewNop().Sugar()
 		return
 	}
-	encoderCfg := getLogEncoder()
+	encoderCfg := getLogEncoder(useTerminal)
 	if !useTerminal {
-		name := fmt.Sprintf("/tmp/tcni-%s-%d.log", time.Now().Format(time.RFC3339), os.Getpid())
+		name := fmt.Sprintf("/tmp/%s-%s-%d.log", prefix, time.Now().Format(time.RFC3339), os.Getpid())
 		file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {
 			panic(err)
@@ -48,10 +50,10 @@ func InitLog(enableLog bool, useTerminal bool) {
 		os.Exit(-1)
 	}
 	Log = lg.Sugar()
-	OutPutEnv()
+	//OutPutEnv()
 }
 func init() {
-	InitLog(constexpr.EnableLog, constexpr.LogOutputToTerminal)
+	InitLog(constexpr.EnableLog, true, "debug")
 }
 func OutPutEnv() {
 	env := os.Environ()

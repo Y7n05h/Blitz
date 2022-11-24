@@ -17,7 +17,7 @@ const (
 	StorageDir         = "/run/tcni/"
 	StorageFileName    = "config.json"
 	StoragePath        = StorageDir + StorageFileName
-	PlugNetworkCfgPath = "/etc/cni/net/net-conf.json"
+	PlugNetworkCfgPath = StoragePath + "net-conf.json"
 	FilePerm           = 0644
 )
 

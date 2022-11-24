@@ -6,6 +6,7 @@ import (
 	"time"
 	"tiny_cni/internal/Reconciler"
 	"tiny_cni/internal/config"
+	"tiny_cni/internal/constexpr"
 	"tiny_cni/internal/log"
 
 	"github.com/containernetworking/cni/pkg/types"
@@ -26,9 +27,12 @@ func init() {
 	flag.StringVar(&FlagsValue.clusterCIDR, "ClusterCIDR", "", "")
 }
 func main() {
+	log.InitLog(constexpr.EnableLog, true, "tcnid")
 	log.Log.Debugf("tcnid,start")
 	flag.Parse()
-	podName := os.Getenv("POD_NAME")
+	log.Log.Debugf("flags:%#v", FlagsValue)
+
+	nodeName := os.Getenv("NODE_NAME")
 	kubeCfg, err := rest.InClusterConfig()
 	if err != nil {
 		log.Log.Fatalf("Get Cluster Failed. May be not in a Cluster")
@@ -39,7 +43,7 @@ func main() {
 		log.Log.Fatal("Get clientSet Failed", err)
 	}
 	log.Log.Debugf("Get clientset Success")
-	currentNode, err := Reconciler.GetCurrentNode(clientset, podName)
+	currentNode, err := Reconciler.GetCurrentNode(clientset, nodeName)
 	if err != nil {
 		log.Log.Fatal("Get Current Node Failed")
 	}
@@ -62,10 +66,12 @@ func main() {
 		if err != nil {
 			log.Log.Fatal("Generator Network Cfg Failed")
 		}
+		log.Log.Infof("[tcnid]Run Success")
+		os.Exit(0)
 	}
 	if 0 == 1 {
 	_:
-		Run(podName, clientset)
+		Run(nodeName, clientset)
 	}
 	time.Sleep(time.Hour * 24)
 }

@@ -122,8 +122,8 @@ spec:
         command:
           - /opt/bin/tcnid
         args:
-          - --ClusterCIDR=10.244.0.0/16
           - --NetworkCfgGen=true
+          - --ClusterCIDR=10.244.0.0/16
         env:
           - name: NODE_NAME
             valueFrom:

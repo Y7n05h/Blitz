@@ -152,6 +152,7 @@ func cmdCheck(args *skel.CmdArgs) error {
 	return err
 }
 func main() {
+	log.InitLog(constexpr.EnableLog, false, "tcni")
 	log.Log.Debug("[exec]")
 	fullVer := fmt.Sprintf("CNI Plugin %s version %s (%s/%s)", constexpr.Program, constexpr.Version, runtime.GOOS, runtime.GOARCH)
 	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, fullVer)
