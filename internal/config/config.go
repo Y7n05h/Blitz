@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	StorageDir         = "/run/tcni/"
+	StorageDir         = "/run/blitz/"
 	StorageFileName    = "config.json"
 	StoragePath        = StorageDir + StorageFileName
 	PlugNetworkCfgPath = StorageDir + "net-conf.json"

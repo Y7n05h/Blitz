@@ -26,8 +26,8 @@ func init() {
 	flag.StringVar(&FlagsValue.clusterCIDR, "ClusterCIDR", "", "")
 }
 func main() {
-	log.InitLog(constexpr.EnableLog, false, "tcnid")
-	log.Log.Debugf("tcnid,start")
+	log.InitLog(constexpr.EnableLog, false, "blitzd")
+	log.Log.Debugf("blitzd,start")
 	flag.Parse()
 	log.Log.Debugf("flags:%#v", FlagsValue)
 
@@ -65,7 +65,7 @@ func main() {
 		if err != nil {
 			log.Log.Fatal("Generator Network CniRuntimeCfg Failed")
 		}
-		log.Log.Infof("[tcnid]Run Success")
+		log.Log.Infof("[blitzd]Run Success")
 		os.Exit(0)
 	}
 	if 0 == 1 {

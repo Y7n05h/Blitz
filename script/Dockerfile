@@ -1,3 +1,3 @@
 FROM archlinux
-COPY build/tcni /opt/bin/tcni
-COPY build/tcnid /opt/bin/tcnid
+COPY build/blitz /opt/bin/blitz
+COPY build/blitzd /opt/bin/blitzd
