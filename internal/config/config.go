@@ -24,26 +24,26 @@ const (
 type PlugStorage struct {
 	Ipv4Record *ipam.Record
 	Mtx        *filemutex.FileMutex `json:"-"`
-	PlugNetworkCfg
+	NetworkCfg
 }
-type Cfg struct {
+type CniRuntimeCfg struct {
 	types.NetConf
 }
-type PlugNetworkCfg struct {
+type NetworkCfg struct {
 	ClusterCIDR ipnet.IPNet
 	NodeCIDR    ipnet.IPNet
 }
 
-func loadPlugNetworkCfg() *PlugNetworkCfg {
-	cfg := &PlugNetworkCfg{}
+func loadPlugNetworkCfg() *NetworkCfg {
+	cfg := &NetworkCfg{}
 	//json.Unmarshal()
 	data, err := os.ReadFile(PlugNetworkCfgPath)
 	if err != nil {
-		log.Log.Error("Read Plug Network Cfg Failed", err)
+		log.Log.Error("Read Plug Network CniRuntimeCfg Failed", err)
 		return nil
 	}
 	if len(data) < 2 {
-		log.Log.Error("Empty Plug Network Cfg")
+		log.Log.Error("Empty Plug Network CniRuntimeCfg")
 		return nil
 	}
 	if err = json.Unmarshal(data, cfg); err != nil {
@@ -52,7 +52,7 @@ func loadPlugNetworkCfg() *PlugNetworkCfg {
 	}
 	return cfg
 }
-func (p *PlugNetworkCfg) StoreNetworkCfg() error {
+func (p *NetworkCfg) StoreNetworkCfg() error {
 	data, err := json.Marshal(p)
 	if err != nil {
 		return err
@@ -63,8 +63,8 @@ func (p *PlugNetworkCfg) StoreNetworkCfg() error {
 	}
 	return nil
 }
-func LoadCfg(data []byte) (*Cfg, error) {
-	cfg := &Cfg{}
+func LoadCfg(data []byte) (*CniRuntimeCfg, error) {
+	cfg := &CniRuntimeCfg{}
 	if err := json.Unmarshal(data, cfg); err != nil {
 		return nil, err
 	}
