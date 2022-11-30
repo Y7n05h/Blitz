@@ -22,7 +22,7 @@ type Flags struct {
 var FlagsValue Flags
 
 func init() {
-	flag.BoolVar(&FlagsValue.nwCfgGen, "NetworkCfgGen", false, "Generator Network Cfg")
+	flag.BoolVar(&FlagsValue.nwCfgGen, "NetworkCfgGen", false, "Generator Network CniRuntimeCfg")
 	flag.StringVar(&FlagsValue.clusterCIDR, "ClusterCIDR", "", "")
 }
 func main() {
@@ -57,13 +57,13 @@ func main() {
 	}
 	log.Log.Debugf("Parse CIDR Success! PodCIDR:%s ClusterCIDR:%s", podCIDR.String(), clusterCIDR.String())
 	if FlagsValue.nwCfgGen {
-		cfg := config.PlugNetworkCfg{
+		cfg := config.NetworkCfg{
 			ClusterCIDR: *clusterCIDR,
 			NodeCIDR:    *podCIDR,
 		}
 		err = cfg.StoreNetworkCfg()
 		if err != nil {
-			log.Log.Fatal("Generator Network Cfg Failed")
+			log.Log.Fatal("Generator Network CniRuntimeCfg Failed")
 		}
 		log.Log.Infof("[tcnid]Run Success")
 		os.Exit(0)
