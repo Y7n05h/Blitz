@@ -2,7 +2,7 @@ package bridge
 
 import (
 	"testing"
-	"tiny_cni/internal/ipnet"
+	"tiny_cni/pkg/ipnet"
 )
 
 func TestGetBridge(t *testing.T) {

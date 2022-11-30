@@ -7,8 +7,8 @@ import (
 	"tiny_cni/internal/Reconciler"
 	"tiny_cni/internal/config"
 	"tiny_cni/internal/constexpr"
-	"tiny_cni/internal/ipnet"
 	"tiny_cni/internal/log"
+	"tiny_cni/pkg/ipnet"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

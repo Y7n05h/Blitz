@@ -8,8 +8,8 @@ import (
 	"os"
 	"syscall"
 	"tiny_cni/internal/constexpr"
-	"tiny_cni/internal/ipnet"
 	"tiny_cni/internal/log"
+	"tiny_cni/pkg/ipnet"
 
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ns"

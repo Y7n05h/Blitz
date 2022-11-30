@@ -3,8 +3,8 @@ package ipam
 import (
 	"encoding/json"
 	"testing"
-	"tiny_cni/internal/ipnet"
 	"tiny_cni/internal/log"
+	"tiny_cni/pkg/ipnet"
 )
 
 func checkIPNetUnderSubnet(t *testing.T, ipNet ipnet.IPNet, subnet ipnet.IPNet) {
