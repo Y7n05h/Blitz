@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net"
 	"tiny_cni/internal/config"
-	"tiny_cni/internal/ipnet"
 	"tiny_cni/internal/log"
 	"tiny_cni/pkg/bridge"
+	"tiny_cni/pkg/ipnet"
 
 	"github.com/vishvananda/netlink"
 
