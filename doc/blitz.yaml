@@ -2,7 +2,7 @@
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: tcni
+  name: blitz
 rules:
 - apiGroups:
   - ""
@@ -16,26 +16,26 @@ rules:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: tcni
+  name: blitz
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: tcni
+  name: blitz
 subjects:
 - kind: ServiceAccount
-  name: tcni
+  name: blitz
   namespace: kube-system
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: tcni
+  name: blitz
   namespace: kube-system
 ---
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: kube-tcni-cfg
+  name: kube-blitz-cfg
   namespace: kube-system
   labels:
     tier: node
@@ -43,9 +43,9 @@ metadata:
 data:
   cni-conf.json: |
     {
-      "name": "tcni",
+      "name": "blitz",
       "cniVersion": "0.4.0",
-      "type": "tcni",
+      "type": "blitz",
       "dataDir": "/var/lib/cni/networks"
     }
   net-conf.json: |
@@ -59,20 +59,20 @@ data:
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: kube-tcni-ds
+  name: kube-blitz-ds
   namespace: kube-system
   labels:
     tier: node
-    app: tcni
+    app: blitz
 spec:
   selector:
     matchLabels:
-      app: tcni
+      app: blitz
   template:
     metadata:
       labels:
         tier: node
-        app: tcni
+        app: blitz
     spec:
       affinity:
         nodeAffinity:
@@ -88,39 +88,39 @@ spec:
       tolerations:
       - operator: Exists
         effect: NoSchedule
-      serviceAccountName: tcni
+      serviceAccountName: blitz
       initContainers:
 #      - name: install-cni-plugin
-#        image: tcni:143010d
+#        image: blitz:143010d
 #        imagePullPolicy: Never
 #        command:
 #        - cp
 #        args:
 #        - -f
-#        - /opt/bin/tcni
-#        - /opt/cni/bin/tcni
+#        - /opt/bin/blitz
+#        - /opt/cni/bin/blitz
 #        volumeMounts:
 #        - name: cni-plugin
 #          mountPath: /opt/cni/bin
       - name: install-cni
-        image: tcni:143010d
+        image: blitz:143010d
         imagePullPolicy: Never
         command:
         - cp
         args:
         - -f
-        - /etc/kube-tcni/cni-conf.json
-        - /etc/cni/net.d/10-tcni.conf
+        - /etc/kube-blitz/cni-conf.json
+        - /etc/cni/net.d/10-blitz.conf
         volumeMounts:
         - name: cni
           mountPath: /etc/cni/net.d
-        - name: tcni-cfg
-          mountPath: /etc/kube-tcni/
+        - name: blitz-cfg
+          mountPath: /etc/kube-blitz/
       - name: install-net-cfg
-        image: tcni:143010d
+        image: blitz:143010d
         imagePullPolicy: Never
         command:
-          - /opt/bin/tcnid
+          - /opt/bin/blitzd
         args:
           - --NetworkCfgGen=true
           - --ClusterCIDR=10.244.0.0/16
@@ -131,15 +131,15 @@ spec:
                 fieldPath: spec.nodeName
         volumeMounts:
           - name: run
-            mountPath: /run/tcni
+            mountPath: /run/blitz
           - name: tmp
             mountPath: /tmp
       containers:
-      - name: kube-tcni
-        image: tcni:143010d
+      - name: kube-blitz
+        image: blitz:143010d
         imagePullPolicy: Never
         command:
-        - /opt/bin/tcnid
+        - /opt/bin/blitzd
         args:
         # get cluster cidr from kube-controller-manager
         - --ClusterCIDR=10.244.0.0/16
@@ -161,15 +161,15 @@ spec:
               fieldPath: spec.nodeName
         volumeMounts:
         - name: run
-          mountPath: /run/tcni
-        - name: tcni-cfg
-          mountPath: /etc/kube-tcni/
+          mountPath: /run/blitz
+        - name: blitz-cfg
+          mountPath: /etc/kube-blitz/
         - name: tmp
           mountPath: /tmp
       volumes:
       - name: run
         hostPath:
-          path: /run/tcni
+          path: /run/blitz
       - name: cni-plugin
         hostPath:
           path: /opt/cni/bin
@@ -179,6 +179,6 @@ spec:
       - name: tmp
         hostPath:
           path: /tmp
-      - name: tcni-cfg
+      - name: blitz-cfg
         configMap:
-          name: kube-tcni-cfg
+          name: kube-blitz-cfg
