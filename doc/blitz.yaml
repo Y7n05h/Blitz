@@ -91,7 +91,7 @@ spec:
       serviceAccountName: blitz
       initContainers:
 #      - name: install-cni-plugin
-#        image: blitz:143010d
+#        image: blitz:0e67859
 #        imagePullPolicy: Never
 #        command:
 #        - cp
@@ -103,7 +103,7 @@ spec:
 #        - name: cni-plugin
 #          mountPath: /opt/cni/bin
       - name: install-cni
-        image: blitz:143010d
+        image: blitz:0e67859
         imagePullPolicy: Never
         command:
         - cp
@@ -117,7 +117,7 @@ spec:
         - name: blitz-cfg
           mountPath: /etc/kube-blitz/
       - name: install-net-cfg
-        image: blitz:143010d
+        image: blitz:0e67859
         imagePullPolicy: Never
         command:
           - /opt/bin/blitzd
@@ -136,7 +136,7 @@ spec:
             mountPath: /tmp
       containers:
       - name: kube-blitz
-        image: blitz:143010d
+        image: blitz:0e67859
         imagePullPolicy: Never
         command:
         - /opt/bin/blitzd
