@@ -1,4 +1,4 @@
-package bridge
+package devices
 
 import (
 	"crypto/rand"
@@ -147,9 +147,9 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *ipnet.IPNe
 	}
 	log.Log.Debugf("Get HostVeth Success1")
 
-	// connect host veth end to the bridge
+	// connect host veth end to the devices
 	if err := netlink.LinkSetMaster(hostVeth, br); err != nil {
-		return fmt.Errorf("failed to connect %q to bridge %v: %v", hostVeth.Attrs().Name, br.Attrs().Name, err)
+		return fmt.Errorf("failed to connect %q to devices %v: %v", hostVeth.Attrs().Name, br.Attrs().Name, err)
 	}
 	log.Log.Debugf("Connect Link and br Success")
 	return nil

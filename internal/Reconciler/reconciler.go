@@ -6,7 +6,7 @@ import (
 	"net"
 	"tiny_cni/internal/config"
 	"tiny_cni/internal/log"
-	"tiny_cni/pkg/bridge"
+	"tiny_cni/pkg/devices"
 	"tiny_cni/pkg/ipnet"
 
 	"github.com/vishvananda/netlink"
@@ -52,7 +52,7 @@ func NewReconciler(clientset *kubernetes.Clientset, cniStorage *config.PlugStora
 	if err != nil {
 		return nil, err
 	}
-	link, err := bridge.LinkByIP(cidr)
+	link, err := devices.LinkByIP(cidr)
 	if err != nil {
 		return nil, err
 	}
