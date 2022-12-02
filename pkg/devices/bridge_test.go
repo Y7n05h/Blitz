@@ -1,4 +1,4 @@
-package bridge
+package devices
 
 import (
 	"testing"
@@ -15,7 +15,7 @@ func TestGetBridge(t *testing.T) {
 		t.Fatal(err)
 	}
 	if br == nil {
-		t.Fatal("invalid bridge")
+		t.Fatal("invalid devices")
 	}
 }
 func TestGetHostIP(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"tiny_cni/internal/config"
 	"tiny_cni/internal/constexpr"
 	"tiny_cni/internal/log"
-	"tiny_cni/pkg/bridge"
+	"tiny_cni/pkg/devices"
 	"tiny_cni/pkg/ipnet"
 
 	"github.com/vishvananda/netlink"
@@ -48,7 +48,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 	log.Log.Debug("[Success]Alloc IP")
 	gateway := storage.Ipv4Record.GetGateway()
-	br, err := bridge.GetBridge(gateway)
+	br, err := devices.GetBridge(gateway)
 	if err != nil {
 		log.Log.Debugf("Err:%#v", err)
 		return err
@@ -64,11 +64,11 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	if err := bridge.SetupVeth(netns, br, args.IfName, ip, gateway.IP); err != nil {
+	if err := devices.SetupVeth(netns, br, args.IfName, ip, gateway.IP); err != nil {
 		log.Log.Debug("Err:", err)
 		return err
 	}
-	if err := bridge.SetupVXLAN(br); err != nil {
+	if err := devices.SetupVXLAN(br); err != nil {
 		log.Log.Debug("Error:", err)
 		return err
 	}
@@ -99,7 +99,7 @@ func cmdDel(args *skel.CmdArgs) error {
 	netns, err := ns.GetNS(args.Netns)
 	if err == nil {
 		log.Log.Debug("Get Namespace Success,Del Veth")
-		err = bridge.DelVeth(netns, args.IfName)
+		err = devices.DelVeth(netns, args.IfName)
 		if err != nil {
 			log.Log.Debug("Del Veth failed: ", err)
 			return err
@@ -143,7 +143,7 @@ func cmdCheck(args *skel.CmdArgs) error {
 		if err != nil {
 			return err
 		}
-		if !bridge.CheckLinkContainIPNNet(ipNet, veth) {
+		if !devices.CheckLinkContainIPNNet(ipNet, veth) {
 			return fmt.Errorf("%s does not have %s", veth.Attrs().Name, ipNet.String())
 		}
 		return nil
