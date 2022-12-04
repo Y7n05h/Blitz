@@ -68,7 +68,10 @@ func EnvironmentInit(nodeName string, clientset *kubernetes.Clientset) {
 		ClusterCIDR: *clusterCIDR,
 		NodeCIDR:    *podCIDR,
 	}
-	config.CreateStorage(cfg)
+	_, err = config.CreateStorage(cfg)
+	if err != nil {
+		log.Log.Fatal("CreateStorage Failed")
+	}
 	log.Log.Infof("[blitzd]Run Success")
 	os.Exit(0)
 
