@@ -14,11 +14,10 @@ import (
 )
 
 const (
-	StorageDir         = "/run/blitz/"
-	StorageFileName    = "config.json"
-	StoragePath        = StorageDir + StorageFileName
-	PlugNetworkCfgPath = StorageDir + "net-conf.json"
-	FilePerm           = 0644
+	StorageDir      = "/run/blitz/"
+	StorageFileName = "config.json"
+	StoragePath     = StorageDir + StorageFileName
+	FilePerm        = 0644
 )
 
 type PlugStorage struct {
@@ -30,39 +29,11 @@ type CniRuntimeCfg struct {
 	types.NetConf
 }
 type NetworkCfg struct {
+	//All filed in NetworkCfg is Read-only
 	ClusterCIDR ipnet.IPNet
 	NodeCIDR    ipnet.IPNet
 }
 
-func loadPlugNetworkCfg() *NetworkCfg {
-	cfg := &NetworkCfg{}
-	//json.Unmarshal()
-	data, err := os.ReadFile(PlugNetworkCfgPath)
-	if err != nil {
-		log.Log.Error("Read Plug Network CniRuntimeCfg Failed", err)
-		return nil
-	}
-	if len(data) < 2 {
-		log.Log.Error("Empty Plug Network CniRuntimeCfg")
-		return nil
-	}
-	if err = json.Unmarshal(data, cfg); err != nil {
-		log.Log.Error("Decode Plug Network failed", err)
-		return nil
-	}
-	return cfg
-}
-func (p *NetworkCfg) StoreNetworkCfg() error {
-	data, err := json.Marshal(p)
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile(PlugNetworkCfgPath, data, FilePerm)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 func LoadCfg(data []byte) (*CniRuntimeCfg, error) {
 	cfg := &CniRuntimeCfg{}
 	if err := json.Unmarshal(data, cfg); err != nil {
@@ -86,7 +57,7 @@ func newFileMutex(lockPath string) (*filemutex.FileMutex, error) {
 
 	return mtx, nil
 }
-func LoadStorage() (*PlugStorage, error) {
+func CreateStorage(cfg NetworkCfg) (*PlugStorage, error) {
 	var err error
 	if _, err = os.Stat(StoragePath); errors.Is(err, os.ErrNotExist) {
 		if err = os.MkdirAll(StorageDir, 0750); err != nil {
@@ -103,6 +74,26 @@ func LoadStorage() (*PlugStorage, error) {
 	}
 	if err != nil {
 		log.Log.Debugf("%#v", err)
+		return nil, err
+	}
+	mtx, err := newFileMutex(StoragePath)
+	if err != nil {
+		log.Log.Debug(err)
+		return nil, err
+	}
+	storage := &PlugStorage{Mtx: mtx, NetworkCfg: cfg, Ipv4Record: ipam.New(&cfg.NodeCIDR, &cfg.ClusterCIDR)}
+
+	//无需加锁，此时不存在并发操作
+
+	ok := storage.store()
+	if !ok {
+		log.Log.Fatal("load failed")
+	}
+	return storage, nil
+}
+func LoadStorage() (*PlugStorage, error) {
+	if _, err := os.Stat(StoragePath); err != nil {
+		log.Log.Errorf("%#v", err)
 		return nil, err
 	}
 	mtx, err := newFileMutex(StoragePath)
@@ -141,18 +132,7 @@ func (s *PlugStorage) load() bool {
 		log.Log.Fatal("Read Config Failed", err)
 	}
 	if len(data) < 2 {
-		log.Log.Warn("Empty Config: May be first run this plug in this node?")
-		//s.Ipv4Record = s.
-		plugNetworkCfg := loadPlugNetworkCfg()
-		if plugNetworkCfg == nil {
-			return false
-		}
-		log.Log.Debugf("Get NodeCIDR: %s", plugNetworkCfg.NodeCIDR.IP.String())
-		s.Ipv4Record = ipam.New(&plugNetworkCfg.NodeCIDR, &plugNetworkCfg.ClusterCIDR)
-		s.ClusterCIDR = plugNetworkCfg.ClusterCIDR
-		s.NodeCIDR = plugNetworkCfg.NodeCIDR
-		log.Log.Debugf("New Ipv4Record: %#v", s)
-		return s.store()
+		log.Log.Fatal("Load Empty Storage!")
 	}
 	if err = json.Unmarshal(data, s); err != nil {
 		log.Log.Error("Decode Config Failed:", err, "json:", data)

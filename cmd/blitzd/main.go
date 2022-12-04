@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"os"
-	"time"
 	"tiny_cni/internal/Reconciler"
 	"tiny_cni/internal/config"
 	"tiny_cni/internal/constexpr"
@@ -69,10 +68,7 @@ func EnvironmentInit(nodeName string, clientset *kubernetes.Clientset) {
 		ClusterCIDR: *clusterCIDR,
 		NodeCIDR:    *podCIDR,
 	}
-	err = cfg.StoreNetworkCfg()
-	if err != nil {
-		log.Log.Fatal("Generator Network CniRuntimeCfg Failed")
-	}
+	config.CreateStorage(cfg)
 	log.Log.Infof("[blitzd]Run Success")
 	os.Exit(0)
 
