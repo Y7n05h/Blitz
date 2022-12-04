@@ -42,6 +42,15 @@ func main() {
 		log.Log.Fatal("Get clientSet Failed", err)
 	}
 	log.Log.Debugf("Get clientset Success")
+	if FlagsValue.nwCfgGen {
+		EnvironmentInit(nodeName, clientset)
+	} else {
+		Run(nodeName, clientset)
+	}
+}
+
+// EnvironmentInit will never return!
+func EnvironmentInit(nodeName string, clientset *kubernetes.Clientset) {
 	currentNode, err := Reconciler.GetCurrentNode(clientset, nodeName)
 	if err != nil {
 		log.Log.Fatal("Get Current Node Failed")
@@ -56,23 +65,17 @@ func main() {
 		log.Log.Fatal("Parse clusterCIDR Error:", err)
 	}
 	log.Log.Debugf("Parse CIDR Success! PodCIDR:%s ClusterCIDR:%s", podCIDR.String(), clusterCIDR.String())
-	if FlagsValue.nwCfgGen {
-		cfg := config.NetworkCfg{
-			ClusterCIDR: *clusterCIDR,
-			NodeCIDR:    *podCIDR,
-		}
-		err = cfg.StoreNetworkCfg()
-		if err != nil {
-			log.Log.Fatal("Generator Network CniRuntimeCfg Failed")
-		}
-		log.Log.Infof("[blitzd]Run Success")
-		os.Exit(0)
+	cfg := config.NetworkCfg{
+		ClusterCIDR: *clusterCIDR,
+		NodeCIDR:    *podCIDR,
 	}
-	if 0 == 1 {
-	_:
-		Run(nodeName, clientset)
+	err = cfg.StoreNetworkCfg()
+	if err != nil {
+		log.Log.Fatal("Generator Network CniRuntimeCfg Failed")
 	}
-	time.Sleep(time.Hour * 24)
+	log.Log.Infof("[blitzd]Run Success")
+	os.Exit(0)
+
 }
 func Run(podName string, clientset *kubernetes.Clientset) error {
 	storage, err := config.LoadStorage()
