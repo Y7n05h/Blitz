@@ -1,7 +1,6 @@
 package devices
 
 import (
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"net"
