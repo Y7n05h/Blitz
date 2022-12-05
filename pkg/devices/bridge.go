@@ -286,14 +286,3 @@ func GetHostIP() (*ipnet.IPNet, error) {
 	}
 	return nil, fmt.Errorf("get HostIP failed")
 }
-
-func GenHardwareAddr() net.HardwareAddr {
-	mac := make([]byte, 6)
-	_, err := rand.Read(mac)
-	if err != nil {
-		log.Log.Fatal("Gen Mac Addr Failed")
-	}
-	mac[0] &= 0xfe
-	mac[0] |= 0x2
-	return mac
-}
