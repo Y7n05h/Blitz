@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"tiny_cni/internal/constexpr"
 	"tiny_cni/internal/log"
+	"tiny_cni/pkg/hardware"
 	"tiny_cni/pkg/ipnet"
 
 	"github.com/containernetworking/plugins/pkg/ip"
