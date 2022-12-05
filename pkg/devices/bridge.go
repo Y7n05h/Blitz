@@ -243,7 +243,8 @@ func createVXLAN(ifIdx int) (*netlink.Vxlan, error) {
 	}
 	attrs := netlink.NewLinkAttrs()
 	attrs.Name = constexpr.VXLANName
-	attrs.HardwareAddr = GenHardwareAddr()
+	addr := hardware.GenHardwareAddr()
+	attrs.HardwareAddr = addr.ToNetHardwareAddr()
 	vtep := netlink.Vxlan{
 		LinkAttrs:    attrs,
 		VxlanId:      constexpr.VxlanId,
