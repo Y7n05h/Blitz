@@ -2,6 +2,7 @@ package devices
 
 import (
 	"testing"
+	"tiny_cni/pkg/hardware"
 	"tiny_cni/pkg/ipnet"
 )
 
@@ -30,8 +31,8 @@ func TestGetHostIP(t *testing.T) {
 	t.Logf("Links:%s", links.Attrs().Name)
 }
 func TestGenHardwareAddr(t *testing.T) {
-	addr := GenHardwareAddr()
-	t.Log(addr.String())
+	addr := hardware.GenHardwareAddr()
+	t.Log(addr.ToNetHardwareAddr().String())
 }
 func TestSetupVXLAN(t *testing.T) {
 	_, err := ipnet.ParseCIDR("10.20.1.1/24")

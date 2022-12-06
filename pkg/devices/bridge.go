@@ -89,7 +89,7 @@ addAddr:
 	}
 	return dev, nil
 }
-func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *ipnet.IPNet, gateway net.IP) error {
+func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *ipnet.IPNet, gateway net.IP, clusterCIDR *ipnet.IPNet) error {
 	hostIdx := -1
 	err := netns.Do(func(hostNS ns.NetNS) error {
 		// setup lo, kubernetes will call loopback internal
@@ -128,7 +128,10 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *ipnet.IPNe
 		if err := ip.AddDefaultRoute(gateway, conLink); err != nil {
 			return err
 		}
-
+		if err != nil {
+			return err
+		}
+		err = ip.AddRoute(clusterCIDR.ToNetIPNet(), gateway, conLink)
 		return nil
 	})
 	if err != nil {
@@ -208,7 +211,7 @@ func GetDefaultGateway() (*netlink.Link, error) {
 	}
 	return nil, fmt.Errorf("get Default Gateway failed")
 }
-func SetupVXLAN() (*netlink.Vxlan, error) {
+func SetupVXLAN(subnet *ipnet.IPNet) (*netlink.Vxlan, error) {
 	_, err := netlink.LinkByName(constexpr.VXLANName)
 	var linkErr netlink.LinkNotFoundError
 	if err == nil {
@@ -223,16 +226,14 @@ func SetupVXLAN() (*netlink.Vxlan, error) {
 		return nil, err
 	}
 	log.Log.Debugf("Get Default Gateway Success")
-	return createVXLAN((*gatewayLink).Attrs().Index)
+	vxlan, err := createVXLAN((*gatewayLink).Attrs().Index)
+	if err != nil {
+		log.Log.Error("createVXLAN Failed:", err)
+	}
+	err = netlink.AddrAdd(vxlan, &netlink.Addr{IPNet: subnet.ToNetIPNet()})
+	return vxlan, err
 }
 func createVXLAN(ifIdx int) (*netlink.Vxlan, error) {
-	group := net.ParseIP(constexpr.VXLANGroup)
-	if group == nil {
-		log.Log.Fatal("Parse Failed")
-	} else {
-		log.Log.Debugf("group:%s", group.String())
-	}
-
 	var linkErr netlink.LinkNotFoundError
 	exist, err := netlink.LinkByName(constexpr.VXLANName)
 	if errors.As(err, &linkErr) && exist != nil {
@@ -247,8 +248,7 @@ func createVXLAN(ifIdx int) (*netlink.Vxlan, error) {
 		LinkAttrs:    attrs,
 		VxlanId:      constexpr.VxlanId,
 		VtepDevIndex: ifIdx,
-		Group:        group,
-		Learning:     true,
+		Learning:     false,
 		Port:         constexpr.VXLANPort,
 	}
 	log.Log.Debugf("VXLAN: mac addr:%s", vtep.Attrs().HardwareAddr.String())

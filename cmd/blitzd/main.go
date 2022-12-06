@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"net"
 	"os"
 	"tiny_cni/internal/Reconciler"
 	"tiny_cni/internal/config"
@@ -98,7 +99,7 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 	if err != nil {
 		return err
 	}
-	vxlan, err := devices.SetupVXLAN()
+	vxlan, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.NodeCIDR.IP, net.CIDRMask(32, 32)))
 	if err != nil {
 		return err
 	}
