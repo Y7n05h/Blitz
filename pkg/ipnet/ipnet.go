@@ -62,3 +62,9 @@ func FromTypesIPNet(ipnet *types.IPNet) *IPNet {
 func FromNetIPNet(ipnet *net.IPNet) *IPNet {
 	return (*IPNet)(ipnet)
 }
+func FromIPAndMask(ip net.IP, mask net.IPMask) *IPNet {
+	return FromNetIPNet(&net.IPNet{
+		IP:   ip,
+		Mask: mask,
+	})
+}
