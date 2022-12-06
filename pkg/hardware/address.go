@@ -43,3 +43,9 @@ func (r *Address) UnmarshalJSON(data []byte) error {
 func (r *Address) ToNetHardwareAddr() net.HardwareAddr {
 	return *(*net.HardwareAddr)(r)
 }
+func FromNetHardware(hardwareAddress *net.HardwareAddr) *Address {
+	return (*Address)(hardwareAddress)
+}
+func (r *Address) Equal(address *Address) bool {
+	return string(r.ToNetHardwareAddr()) == string(address.ToNetHardwareAddr())
+}
