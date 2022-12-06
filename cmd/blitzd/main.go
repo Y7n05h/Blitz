@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"tiny_cni/internal/Reconciler"
 	"tiny_cni/internal/config"
 	"tiny_cni/internal/constexpr"
 	"tiny_cni/internal/log"
+	"tiny_cni/pkg/devices"
 	"tiny_cni/pkg/ipnet"
 
 	"k8s.io/client-go/kubernetes"
@@ -44,7 +46,10 @@ func main() {
 	if FlagsValue.nwCfgGen {
 		EnvironmentInit(nodeName, clientset)
 	} else {
-		Run(nodeName, clientset)
+		err := Run(nodeName, clientset)
+		if err != nil {
+			log.Log.Fatal("Run Failed:", err)
+		}
 	}
 }
 
@@ -74,17 +79,33 @@ func EnvironmentInit(nodeName string, clientset *kubernetes.Clientset) {
 	}
 	log.Log.Infof("[blitzd]Run Success")
 	os.Exit(0)
-
 }
 func Run(podName string, clientset *kubernetes.Clientset) error {
 	storage, err := config.LoadStorage()
 	if err != nil {
 		log.Log.Fatal("Load Storage Failed:", err)
 	}
-	reconciler, err := Reconciler.NewReconciler(clientset, storage, podName)
+	ctx, _ := context.WithCancel(context.TODO())
+	node, err := Reconciler.GetCurrentNode(clientset, podName)
+	if err != nil {
+		return nil
+	}
+	err = Reconciler.AddVxlanInfo(clientset, node)
+	if err != nil {
+		return err
+	}
+	podCIDR, err := Reconciler.GetPodCIDR(node)
+	if err != nil {
+		return err
+	}
+	vxlan, err := devices.SetupVXLAN()
+	if err != nil {
+		return err
+	}
+	reconciler, err := Reconciler.NewReconciler(ctx, clientset, storage, podName, podCIDR, vxlan)
 	if err != nil {
 		log.Log.Fatal("Create Reconciler failed:", err)
 	}
-	reconciler.ReconcilerLoop()
+	go reconciler.Run(ctx)
 	return nil
 }

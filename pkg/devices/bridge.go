@@ -284,3 +284,80 @@ func GetHostIP() (*ipnet.IPNet, error) {
 	}
 	return nil, fmt.Errorf("get HostIP failed")
 }
+func GetRouteByDist(idx int, subnet ipnet.IPNet) *netlink.Route {
+	route := netlink.Route{
+		LinkIndex: idx,
+		Dst:       subnet.ToNetIPNet(),
+	}
+	res, err := netlink.RouteListFiltered(netlink.FAMILY_V4, &route, netlink.RT_FILTER_DST|netlink.RT_FILTER_OIF)
+	if err != nil {
+		log.Log.Debugf("Can not get route idx:%d subnet:%s", idx, subnet.String())
+		return nil
+	}
+	if len(res) == 0 {
+		log.Log.Debugf("Can not get route idx:%d subnet:%s", idx, subnet.String())
+		return nil
+	}
+	if len(res) > 1 {
+		log.Log.Errorf("Error Multi Route:%#v", res)
+	}
+	return &res[0]
+}
+func GetNeighByIP(idx int, ip net.IP) *netlink.Neigh {
+	neighs, err := netlink.NeighList(idx, netlink.FAMILY_V4)
+	if err != nil {
+		log.Log.Error("Get Neigh Failed:", err)
+		return nil
+	}
+	for _, neigh := range neighs {
+		if neigh.IP.Equal(ip) {
+			return &neigh
+		}
+	}
+	log.Log.Error("No Target Neigh")
+	return nil
+}
+
+func AddFDB(ifIdx int, ip net.IP, address hardware.Address) error {
+	log.Log.Infof("calling AddFDB: %v, %v", ip, address.ToNetHardwareAddr().String())
+	return netlink.NeighSet(&netlink.Neigh{
+		LinkIndex:    ifIdx,
+		State:        netlink.NUD_PERMANENT,
+		Family:       syscall.AF_BRIDGE,
+		Flags:        netlink.NTF_SELF,
+		IP:           ip,
+		HardwareAddr: address.ToNetHardwareAddr(),
+	})
+}
+func DelFDB(ifIdx int, ip net.IP, address hardware.Address) error {
+	log.Log.Infof("calling DelFDB: %v, %v", ip, address.ToNetHardwareAddr().String())
+	return netlink.NeighDel(&netlink.Neigh{
+		LinkIndex:    ifIdx,
+		Family:       syscall.AF_BRIDGE,
+		Flags:        netlink.NTF_SELF,
+		IP:           ip,
+		HardwareAddr: address.ToNetHardwareAddr(),
+	})
+}
+
+func AddARP(ifIdx int, ip net.IP, address hardware.Address) error {
+	log.Log.Infof("calling AddARP: %v, %v", ip, address.ToNetHardwareAddr().String())
+	return netlink.NeighSet(&netlink.Neigh{
+		LinkIndex:    ifIdx,
+		State:        netlink.NUD_PERMANENT,
+		Type:         syscall.RTN_UNICAST,
+		IP:           ip,
+		HardwareAddr: address.ToNetHardwareAddr(),
+	})
+}
+
+func DelARP(ifIdx int, ip net.IP, address hardware.Address) error {
+	log.Log.Infof("calling DelARP: %v, %v", ip, address.ToNetHardwareAddr().String())
+	return netlink.NeighDel(&netlink.Neigh{
+		LinkIndex:    ifIdx,
+		State:        netlink.NUD_PERMANENT,
+		Type:         syscall.RTN_UNICAST,
+		IP:           ip,
+		HardwareAddr: address.ToNetHardwareAddr(),
+	})
+}
