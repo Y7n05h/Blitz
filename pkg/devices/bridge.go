@@ -208,24 +208,22 @@ func GetDefaultGateway() (*netlink.Link, error) {
 	}
 	return nil, fmt.Errorf("get Default Gateway failed")
 }
-func SetupVXLAN(bridge netlink.Link) error {
+func SetupVXLAN() (*netlink.Vxlan, error) {
 	_, err := netlink.LinkByName(constexpr.VXLANName)
 	var linkErr netlink.LinkNotFoundError
 	if err == nil {
 		log.Log.Debugf("Found VXLAN exist")
-		return nil
+		return nil, nil
 	} else if !errors.As(err, &linkErr) {
 		log.Log.Error("No Expect Error: ", err)
-		return err
+		return nil, err
 	}
 	gatewayLink, err := GetDefaultGateway()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Log.Debugf("Get Default Gateway Success")
-	vxlan, err := createVXLAN((*gatewayLink).Attrs().Index)
-	err = netlink.LinkSetMaster(vxlan, bridge)
-	return err
+	return createVXLAN((*gatewayLink).Attrs().Index)
 }
 func createVXLAN(ifIdx int) (*netlink.Vxlan, error) {
 	group := net.ParseIP(constexpr.VXLANGroup)

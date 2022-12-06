@@ -68,7 +68,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		log.Log.Debug("Err:", err)
 		return err
 	}
-	if err := devices.SetupVXLAN(br); err != nil {
+	if _, err := devices.SetupVXLAN(); err != nil {
 		log.Log.Debug("Error:", err)
 		return err
 	}
