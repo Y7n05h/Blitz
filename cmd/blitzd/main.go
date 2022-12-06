@@ -91,15 +91,17 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 	if err != nil {
 		return nil
 	}
+	vxlan, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.NodeCIDR.IP, net.CIDRMask(32, 32)))
+	if err != nil {
+		log.Log.Error("SetupVXLAN:", err)
+		return err
+	}
 	err = Reconciler.AddVxlanInfo(clientset, node)
 	if err != nil {
+		log.Log.Error("AddVxlanInfo:", err)
 		return err
 	}
 	podCIDR, err := Reconciler.GetPodCIDR(node)
-	if err != nil {
-		return err
-	}
-	vxlan, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.NodeCIDR.IP, net.CIDRMask(32, 32)))
 	if err != nil {
 		return err
 	}

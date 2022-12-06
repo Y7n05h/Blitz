@@ -1,4 +1,4 @@
-.PHONY: build deploy clean
+.PHONY: build deploy cleanImage clean
 
 TAG?=$(shell git describe --tags --dirty --always)
 
@@ -8,12 +8,13 @@ build:
 	$(GO_BUILD) -o build/blitz cmd/blitz/main.go
 	$(GO_BUILD) -o build/blitzd cmd/blitzd/main.go
 VERSION=v0.1
-image: build
+image: cleanImage build
 	sudo nerdctl build -t blitz:$(TAG) -f script/Dockerfile .
 	sudo nerdctl save -o build/blitz-$(TAG).docker blitz:$(TAG)
 deploy:
 	kubectl apply -f doc/blitz.yaml
-
+cleanImage:
+	rm -rf build/*.docker
 clean:
 	rm -rf build
 	go mod tidy
