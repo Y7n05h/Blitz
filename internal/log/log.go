@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	"os"
+	"syscall"
 	"time"
 	"tiny_cni/internal/constexpr"
 
@@ -24,6 +25,11 @@ var (
 	Log *zap.SugaredLogger
 )
 
+func RewriteStderr(fd int) {
+	if err := syscall.Dup2(fd, int(os.Stderr.Fd())); err != nil {
+		Log.Error("Dup2 Failed: ", err)
+	}
+}
 func InitLog(enableLog bool, useTerminal bool, prefix string) {
 	if !enableLog {
 		Log = zap.NewNop().Sugar()
@@ -41,6 +47,7 @@ func InitLog(enableLog bool, useTerminal bool, prefix string) {
 		core := zapcore.NewCore(encoder, writeSyncer, zapcore.DebugLevel)
 		Log = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel)).Sugar()
 		OutPutEnv()
+		RewriteStderr(int(file.Fd()))
 		return
 	}
 	loggerCfg := zap.NewDevelopmentConfig()

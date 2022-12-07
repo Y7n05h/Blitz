@@ -96,11 +96,13 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 		log.Log.Error("SetupVXLAN:", err)
 		return err
 	}
+	log.Log.Debug("SetupVXLAN Success")
 	err = Reconciler.AddVxlanInfo(clientset, node)
 	if err != nil {
 		log.Log.Error("AddVxlanInfo:", err)
 		return err
 	}
+	log.Log.Debug("AddVXLAN Info Success")
 	podCIDR, err := Reconciler.GetPodCIDR(node)
 	if err != nil {
 		return err
