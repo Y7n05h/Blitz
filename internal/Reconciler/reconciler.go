@@ -176,6 +176,7 @@ func (r *Reconciler) DeleteHandle(obj any) {
 
 }
 func NewReconciler(ctx context.Context, clientset *kubernetes.Clientset, cniStorage *config.PlugStorage, podName string, podCIDR *ipnet.IPNet, vxlan netlink.Link) (*Reconciler, error) {
+	log.Log.Debug("New Reconciler")
 	listWatch := cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			return clientset.CoreV1().Nodes().List(ctx, options)
@@ -191,9 +192,11 @@ func NewReconciler(ctx context.Context, clientset *kubernetes.Clientset, cniStor
 		UpdateFunc: reconciler.UpdateHandle,
 		DeleteFunc: reconciler.DeleteHandle,
 	}
+	log.Log.Debug("New IndexerInformer")
 	indexer, controller := cache.NewIndexerInformer(&listWatch, &corev1.Node{}, SyncTime, handles, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	reconciler.Node = listers.NewNodeLister(indexer)
 	reconciler.Controller = controller
+	log.Log.Debug("New Reconciler Success")
 	return reconciler, nil
 }
 func (r *Reconciler) Run(ctx context.Context) {

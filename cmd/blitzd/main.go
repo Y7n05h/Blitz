@@ -107,10 +107,11 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 	if err != nil {
 		return err
 	}
+	log.Log.Debug("Get PodCIDR Success")
 	reconciler, err := Reconciler.NewReconciler(ctx, clientset, storage, podName, podCIDR, vxlan)
 	if err != nil {
 		log.Log.Fatal("Create Reconciler failed:", err)
 	}
-	go reconciler.Run(ctx)
+	reconciler.Run(ctx)
 	return nil
 }
