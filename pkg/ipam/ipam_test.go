@@ -17,7 +17,7 @@ func checkIPNetUnderSubnet(t *testing.T, ipNet ipnet.IPNet, subnet ipnet.IPNet) 
 }
 func TestRecord_Alloc(t *testing.T) {
 	subnet, _ := ipnet.ParseCIDR("192.168.1.1/24")
-	record := New(subnet, subnet)
+	record := New(subnet)
 	id1 := "123123123"
 	id2 := "312312312"
 	ip1, err := record.Alloc(id1)

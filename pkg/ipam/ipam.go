@@ -70,8 +70,8 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 	log.Log.Debug("Unmarshal Record Finished")
 	return nil
 }
-func New(subnet *ipnet.IPNet, gateway *ipnet.IPNet) *Record {
-	return &Record{Subnet: subnet, Gateway: gateway, AllocRecord: bimap.NewBiMap[string, string]()}
+func New(subnet *ipnet.IPNet) *Record {
+	return &Record{Subnet: subnet, Gateway: ipnet.FromIPAndMask(cip.NextIP(subnet.IP), subnet.Mask), AllocRecord: bimap.NewBiMap[string, string]()}
 }
 func (r *Record) Alloced(ip *net.IP) bool {
 	log.Log.Debugf("Record %#v", r.AllocRecord)
@@ -87,7 +87,7 @@ func (r *Record) getAvailableLen() int {
 	return bits - ones
 }
 func (r *Record) GetGateway() *ipnet.IPNet {
-	return &ipnet.IPNet{IP: cip.NextIP(r.Subnet.IP), Mask: r.Mask()}
+	return r.Gateway
 }
 func ipToInt(ip net.IP) *big.Int {
 	if v := ip.To4(); v != nil {

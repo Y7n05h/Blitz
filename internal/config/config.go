@@ -81,7 +81,7 @@ func CreateStorage(cfg NetworkCfg) (*PlugStorage, error) {
 		log.Log.Debug(err)
 		return nil, err
 	}
-	storage := &PlugStorage{Mtx: mtx, NetworkCfg: cfg, Ipv4Record: ipam.New(&cfg.NodeCIDR, &cfg.ClusterCIDR)}
+	storage := &PlugStorage{Mtx: mtx, NetworkCfg: cfg, Ipv4Record: ipam.New(&cfg.NodeCIDR)}
 
 	//无需加锁，此时不存在并发操作
 

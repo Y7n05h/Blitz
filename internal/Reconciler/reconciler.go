@@ -88,6 +88,7 @@ func (r *Reconciler) AddHandle(obj any) {
 		return
 	}
 	cidr, err := GetPodCIDR(n)
+	log.Log.Debugf("[Reconciler]Node:%s annotations:%v %#v", n.Name, annotations, annotations)
 	if err != nil {
 		log.Log.Warn("Get Cidr From Node Failed", err)
 		return
@@ -111,7 +112,8 @@ func (r *Reconciler) AddHandle(obj any) {
 	if err != nil {
 		log.Log.Error("Add ARP Failed: ", err)
 	}
-	//删除 Fdb表中条目
+	//添加 Fdb表中条目
+	log.Log.Debugf("[Reconciler]DEBUG Node:%s annotations:%v %#v", n.Name, annotations, annotations)
 	err = devices.AddFDB(ifIdx, annotations.PublicIP.IP, annotations.VxlanMacAddr)
 	if err != nil {
 		log.Log.Error("Add Fdb Failed: ", err)
