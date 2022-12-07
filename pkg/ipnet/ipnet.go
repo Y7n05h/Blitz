@@ -13,10 +13,11 @@ var _ json.Unmarshaler = (*IPNet)(nil)
 var _ json.Marshaler = (*IPNet)(nil)
 
 func ParseCIDR(s string) (*IPNet, error) {
-	_, ipn, err := net.ParseCIDR(s)
+	ip, ipn, err := net.ParseCIDR(s)
 	if err != nil {
 		return nil, err
 	}
+	ipn.IP = ip
 	return FromNetIPNet(ipn), nil
 }
 

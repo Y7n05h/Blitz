@@ -44,3 +44,14 @@ func TestRecord_Alloc(t *testing.T) {
 }
 func TestRecord_Release(t *testing.T) {
 }
+func TestRecord_UnmarshalJSON(t *testing.T) {
+	subnet := ipnet.IPNet{}
+	cidrString := "192.168.1.1/24"
+	err := subnet.UnmarshalJSON([]byte("\"" + cidrString + "\""))
+	if err != nil {
+		log.Log.Errorf("UnmarshalJSON Failed:%v", err)
+	}
+	if cidrString != subnet.String() {
+		t.Fatalf("UnmarshalJSON Err: expect:%s    really:%s", cidrString, subnet.String())
+	}
+}
