@@ -21,7 +21,7 @@ const (
 )
 
 type PlugStorage struct {
-	Ipv4Record *ipam.Record
+	Ipv4Record *ipam.Ipam
 	Mtx        *filemutex.FileMutex `json:"-"`
 	NetworkCfg
 }

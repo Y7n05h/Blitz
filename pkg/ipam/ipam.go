@@ -15,14 +15,14 @@ import (
 	"github.com/vishalkuo/bimap"
 )
 
-var _ json.Unmarshaler = (*Record)(nil)
-var _ json.Marshaler = (*Record)(nil)
+var _ json.Unmarshaler = (*Ipam)(nil)
+var _ json.Marshaler = (*Ipam)(nil)
 
 func init() {
 	rand.Seed(time.Now().Unix() + int64(os.Getpid()))
 }
 
-type Record struct {
+type Ipam struct {
 	//Subnet is available in this node
 	Subnet *ipnet.IPNet
 	//Gateway is the gateway of devices in this node
@@ -32,8 +32,8 @@ type Record struct {
 	AllocRecord *bimap.BiMap[string, string]
 }
 
-func (r Record) MarshalJSON() ([]byte, error) {
-	log.Log.Debug("Marshal Record Begin")
+func (r Ipam) MarshalJSON() ([]byte, error) {
+	log.Log.Debug("Marshal Ipam Begin")
 	data, err := json.Marshal(&struct {
 		Subnet      ipnet.IPNet
 		Gateway     ipnet.IPNet
@@ -46,11 +46,11 @@ func (r Record) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		log.Log.Fatal("Encode failed")
 	}
-	log.Log.Debug("Marshal Record Finished")
+	log.Log.Debug("Marshal Ipam Finished")
 	return data, nil
 }
-func (r *Record) UnmarshalJSON(data []byte) error {
-	log.Log.Debug("Unmarshal Record Begin")
+func (r *Ipam) UnmarshalJSON(data []byte) error {
+	log.Log.Debug("Unmarshal Ipam Begin")
 	record := &struct {
 		Subnet      ipnet.IPNet
 		Gateway     ipnet.IPNet
@@ -67,14 +67,14 @@ func (r *Record) UnmarshalJSON(data []byte) error {
 	} else {
 		r.AllocRecord = bimap.NewBiMap[string, string]()
 	}
-	log.Log.Debug("Unmarshal Record Finished")
+	log.Log.Debug("Unmarshal Ipam Finished")
 	return nil
 }
-func New(subnet *ipnet.IPNet) *Record {
-	return &Record{Subnet: subnet, Gateway: ipnet.FromIPAndMask(cip.NextIP(subnet.IP), subnet.Mask), AllocRecord: bimap.NewBiMap[string, string]()}
+func New(subnet *ipnet.IPNet) *Ipam {
+	return &Ipam{Subnet: subnet, Gateway: ipnet.FromIPAndMask(cip.NextIP(subnet.IP), subnet.Mask), AllocRecord: bimap.NewBiMap[string, string]()}
 }
-func (r *Record) Alloced(ip *net.IP) bool {
-	log.Log.Debugf("Record %#v", r.AllocRecord)
+func (r *Ipam) Alloced(ip *net.IP) bool {
+	log.Log.Debugf("Ipam %#v", r.AllocRecord)
 	cidr := r.Subnet.ToNetIPNet()
 	if !cidr.Contains(*ip) {
 		return false
@@ -82,11 +82,11 @@ func (r *Record) Alloced(ip *net.IP) bool {
 	_, ok := r.AllocRecord.Get(ip.String())
 	return ok
 }
-func (r *Record) getAvailableLen() int {
+func (r *Ipam) getAvailableLen() int {
 	ones, bits := r.Subnet.Mask.Size()
 	return bits - ones
 }
-func (r *Record) GetGateway() *ipnet.IPNet {
+func (r *Ipam) GetGateway() *ipnet.IPNet {
 	return r.Gateway
 }
 func ipToInt(ip net.IP) *big.Int {
@@ -97,10 +97,10 @@ func ipToInt(ip net.IP) *big.Int {
 }
 
 func intToIP(i *big.Int) net.IP {
-	return net.IP(i.Bytes())
+	return i.Bytes()
 }
-func (r *Record) Alloc(id string) (*ipnet.IPNet, error) {
-	log.Log.Debugf("Record %#v", r.AllocRecord)
+func (r *Ipam) Alloc(id string) (*ipnet.IPNet, error) {
+	log.Log.Debugf("Ipam %#v", r.AllocRecord)
 	subnet, ok := r.GetIPByID(id)
 	if ok {
 		return subnet, nil
@@ -118,7 +118,7 @@ func (r *Record) Alloc(id string) (*ipnet.IPNet, error) {
 	max := (uint64(1) << size) - 3
 	log.Log.Debugf("Max Size %d", max)
 	if uint64(r.AllocRecord.Size()) >= max {
-		return nil, fmt.Errorf("Subnet have no available ip addr")
+		return nil, fmt.Errorf("subnet have no available ip addr")
 	}
 	idx := big.NewInt(0)
 	for {
@@ -133,7 +133,7 @@ func (r *Record) Alloc(id string) (*ipnet.IPNet, error) {
 		}
 	}
 }
-func (r *Record) Release(id string) error {
+func (r *Ipam) Release(id string) error {
 	log.Log.Debug("Release id")
 	r.AllocRecord.DeleteInverse(id)
 	log.Log.Debug("Release id Done")
@@ -144,7 +144,7 @@ func (r *Record) Release(id string) error {
 GetIPByID never return nil,true
 The First return value is nil iff the second value is false
 */
-func (r *Record) GetIPByID(id string) (*ipnet.IPNet, bool) {
+func (r *Ipam) GetIPByID(id string) (*ipnet.IPNet, bool) {
 	ipString, ok := r.AllocRecord.GetInverse(id)
 	if !ok {
 		return nil, false
@@ -156,6 +156,6 @@ func (r *Record) GetIPByID(id string) (*ipnet.IPNet, bool) {
 	}
 	return &ipnet.IPNet{IP: ip, Mask: r.Mask()}, true
 }
-func (r *Record) Mask() net.IPMask {
+func (r *Ipam) Mask() net.IPMask {
 	return r.Gateway.Mask
 }
