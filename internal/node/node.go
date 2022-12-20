@@ -20,10 +20,13 @@ const (
 )
 
 type Annotations struct {
-	VxlanMacAddr hardware.Address
+	VxlanMacAddr hardware.Address `json:"omitempty"`
 	PublicIP     ipnet.IPNet
 }
 
+func (a *Annotations) Equal(annotations *Annotations) bool {
+	return a == annotations || (a != nil && annotations != nil && a.VxlanMacAddr.Equal(&annotations.VxlanMacAddr) && a.PublicIP.Equal(&annotations.PublicIP))
+}
 func AddAnnotationsForNode(clientset *kubernetes.Clientset, annotations *Annotations, node *corev1.Node) error {
 	data, err := json.Marshal(annotations)
 	if err != nil {

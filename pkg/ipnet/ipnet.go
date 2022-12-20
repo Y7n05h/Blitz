@@ -46,13 +46,7 @@ func (n *IPNet) ToTypesIPNet() *types.IPNet {
 	return (*types.IPNet)(n)
 }
 func (n *IPNet) Equal(s *IPNet) bool {
-	if !n.IP.Equal(s.IP) {
-		return false
-	}
-	if len(n.Mask) != len(s.Mask) {
-		return false
-	}
-	return string(n.Mask) == string(s.Mask)
+	return (n == s) || (n != nil && s != nil && n.IP.Equal(s.IP) && len(n.Mask) == len(s.Mask) && string(s.Mask) == string(s.Mask))
 }
 func (n *IPNet) String() string {
 	return n.ToNetIPNet().String()

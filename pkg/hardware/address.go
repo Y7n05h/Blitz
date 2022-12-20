@@ -47,5 +47,5 @@ func FromNetHardware(hardwareAddress *net.HardwareAddr) *Address {
 	return (*Address)(hardwareAddress)
 }
 func (r *Address) Equal(address *Address) bool {
-	return string(r.ToNetHardwareAddr()) == string(address.ToNetHardwareAddr())
+	return (r == address) || (r != nil && address != nil && string(r.ToNetHardwareAddr()) == string(address.ToNetHardwareAddr()))
 }
