@@ -11,7 +11,7 @@ import (
 	"tiny_cni/pkg/hardware"
 	"tiny_cni/pkg/ipnet"
 	"tiny_cni/pkg/log"
-	node_metadata "tiny_cni/pkg/node"
+	nodeMetadata "tiny_cni/pkg/node"
 
 	"github.com/vishvananda/netlink"
 	corev1 "k8s.io/api/core/v1"
@@ -44,7 +44,7 @@ func AddVxlanInfo(clientset *kubernetes.Clientset, n *corev1.Node) error {
 		return err
 	}
 	hardwareAddr := hardware.FromNetHardware(&link.Attrs().HardwareAddr)
-	oldAnnotations := node_metadata.GetAnnotations(n)
+	oldAnnotations := nodeMetadata.GetAnnotations(n)
 	if oldAnnotations != nil && oldAnnotations.VxlanMacAddr.Equal(hardwareAddr) {
 		return nil
 	}
@@ -52,8 +52,8 @@ func AddVxlanInfo(clientset *kubernetes.Clientset, n *corev1.Node) error {
 	if err != nil {
 		return err
 	}
-	annotations := node_metadata.Annotations{VxlanMacAddr: *hardwareAddr, PublicIP: *PublicIP}
-	err = node_metadata.AddAnnotationsForNode(clientset, &annotations, n)
+	annotations := nodeMetadata.Annotations{VxlanMacAddr: *hardwareAddr, PublicIP: *PublicIP}
+	err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, n)
 	if err != nil {
 		return err
 	}

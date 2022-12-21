@@ -3,7 +3,7 @@ package events
 import (
 	"tiny_cni/pkg/ipnet"
 	"tiny_cni/pkg/log"
-	node_metadata "tiny_cni/pkg/node"
+	nodeMetadata "tiny_cni/pkg/node"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -20,7 +20,7 @@ type Event struct {
 	Type    EventType
 	Name    string
 	PodCIDR ipnet.IPNet
-	Attr    node_metadata.Annotations
+	Attr    nodeMetadata.Annotations
 }
 type EventHandle interface {
 	AddHandle(event *Event)
@@ -28,11 +28,11 @@ type EventHandle interface {
 }
 
 func FromNode(n *corev1.Node, eventType EventType) *Event {
-	annotations := node_metadata.GetAnnotations(n)
+	annotations := nodeMetadata.GetAnnotations(n)
 	if annotations == nil {
 		return nil
 	}
-	cidr, err := node_metadata.GetPodCIDR(n)
+	cidr, err := nodeMetadata.GetPodCIDR(n)
 	log.Log.Debugf("[Reconciler]Node:%s annotations:%v %#v", n.Name, annotations, annotations)
 	if err != nil {
 		log.Log.Warn("Get Cidr From Node Failed", err)

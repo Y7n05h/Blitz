@@ -12,7 +12,7 @@ import (
 	"tiny_cni/pkg/events"
 	"tiny_cni/pkg/ipnet"
 	"tiny_cni/pkg/log"
-	node_metadata "tiny_cni/pkg/node"
+	nodeMetadata "tiny_cni/pkg/node"
 	"tiny_cni/pkg/vxlan"
 
 	"k8s.io/client-go/kubernetes"
@@ -64,7 +64,7 @@ func EnvironmentInit(nodeName string, clientset *kubernetes.Clientset) {
 		log.Log.Fatal("Get Current Node Failed")
 	}
 	log.Log.Debugf("Get current Node Success")
-	podCIDR, err := node_metadata.GetPodCIDR(currentNode)
+	podCIDR, err := nodeMetadata.GetPodCIDR(currentNode)
 	if err != nil {
 		log.Log.Fatal("Get Node CIDR Failed")
 	}
@@ -93,7 +93,7 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 	if err != nil {
 		return nil
 	}
-	podCIDR, err := node_metadata.GetPodCIDR(node)
+	podCIDR, err := nodeMetadata.GetPodCIDR(node)
 	if err != nil {
 		return err
 	}
