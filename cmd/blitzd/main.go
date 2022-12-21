@@ -10,6 +10,7 @@ import (
 	"tiny_cni/internal/constexpr"
 	"tiny_cni/internal/events"
 	"tiny_cni/internal/log"
+	node_metadata "tiny_cni/internal/node"
 	"tiny_cni/internal/vxlan"
 	"tiny_cni/pkg/devices"
 	"tiny_cni/pkg/ipnet"
@@ -63,7 +64,7 @@ func EnvironmentInit(nodeName string, clientset *kubernetes.Clientset) {
 		log.Log.Fatal("Get Current Node Failed")
 	}
 	log.Log.Debugf("Get current Node Success")
-	podCIDR, err := Reconciler.GetPodCIDR(currentNode)
+	podCIDR, err := node_metadata.GetPodCIDR(currentNode)
 	if err != nil {
 		log.Log.Fatal("Get Node CIDR Failed")
 	}
@@ -92,7 +93,7 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 	if err != nil {
 		return nil
 	}
-	podCIDR, err := Reconciler.GetPodCIDR(node)
+	podCIDR, err := node_metadata.GetPodCIDR(node)
 	if err != nil {
 		return err
 	}

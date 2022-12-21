@@ -3,7 +3,6 @@ package Reconciler
 import (
 	"context"
 	"fmt"
-	"net"
 	"time"
 	"tiny_cni/internal/config"
 	"tiny_cni/internal/constexpr"
@@ -39,13 +38,6 @@ type Reconciler struct {
 	eventHandle events.EventHandle
 }
 
-func GetPodCIDR(node *corev1.Node) (*ipnet.IPNet, error) {
-	if len(node.Spec.PodCIDR) == 0 {
-		return nil, fmt.Errorf("get %s PodCIDR Failed", node.Name)
-	}
-	_, ip, err := net.ParseCIDR(node.Spec.PodCIDR)
-	return ipnet.FromNetIPNet(ip), err
-}
 func AddVxlanInfo(clientset *kubernetes.Clientset, n *corev1.Node) error {
 	link, err := netlink.LinkByName(constexpr.VXLANName)
 	if err != nil {

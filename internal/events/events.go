@@ -1,7 +1,6 @@
 package events
 
 import (
-	"tiny_cni/internal/Reconciler"
 	"tiny_cni/internal/log"
 	node_metadata "tiny_cni/internal/node"
 	"tiny_cni/pkg/ipnet"
@@ -33,7 +32,7 @@ func FromNode(n *corev1.Node, eventType EventType) *Event {
 	if annotations == nil {
 		return nil
 	}
-	cidr, err := Reconciler.GetPodCIDR(n)
+	cidr, err := node_metadata.GetPodCIDR(n)
 	log.Log.Debugf("[Reconciler]Node:%s annotations:%v %#v", n.Name, annotations, annotations)
 	if err != nil {
 		log.Log.Warn("Get Cidr From Node Failed", err)

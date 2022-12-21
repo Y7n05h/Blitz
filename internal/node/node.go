@@ -3,6 +3,8 @@ package node
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net"
 	"tiny_cni/pkg/hardware"
 	"tiny_cni/pkg/ipnet"
 
@@ -60,4 +62,11 @@ func GetAnnotations(node *corev1.Node) *Annotations {
 		return nil
 	}
 	return &annotations
+}
+func GetPodCIDR(node *corev1.Node) (*ipnet.IPNet, error) {
+	if len(node.Spec.PodCIDR) == 0 {
+		return nil, fmt.Errorf("get %s PodCIDR Failed", node.Name)
+	}
+	_, ip, err := net.ParseCIDR(node.Spec.PodCIDR)
+	return ipnet.FromNetIPNet(ip), err
 }
