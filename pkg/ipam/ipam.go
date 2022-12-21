@@ -8,8 +8,8 @@ import (
 	"net"
 	"os"
 	"time"
-	"tiny_cni/internal/log"
 	"tiny_cni/pkg/ipnet"
+	"tiny_cni/pkg/log"
 
 	cip "github.com/containernetworking/plugins/pkg/ip"
 	"github.com/vishalkuo/bimap"

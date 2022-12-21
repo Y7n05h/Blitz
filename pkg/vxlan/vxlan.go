@@ -2,9 +2,9 @@ package vxlan
 
 import (
 	"syscall"
-	"tiny_cni/internal/events"
-	"tiny_cni/internal/log"
 	"tiny_cni/pkg/devices"
+	"tiny_cni/pkg/events"
+	"tiny_cni/pkg/log"
 
 	"github.com/vishvananda/netlink"
 )

@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"net"
-	"tiny_cni/internal/log"
+	"tiny_cni/pkg/log"
 )
 
 type Address net.HardwareAddr

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"os"
 	"path"
-	"tiny_cni/internal/log"
 	"tiny_cni/pkg/ipam"
 	"tiny_cni/pkg/ipnet"
+	"tiny_cni/pkg/log"
 
 	"github.com/alexflint/go-filemutex"
 	"github.com/containernetworking/cni/pkg/types"

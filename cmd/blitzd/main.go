@@ -5,15 +5,15 @@ import (
 	"flag"
 	"net"
 	"os"
-	"tiny_cni/internal/Reconciler"
-	"tiny_cni/internal/config"
-	"tiny_cni/internal/constexpr"
-	"tiny_cni/internal/events"
-	"tiny_cni/internal/log"
-	node_metadata "tiny_cni/internal/node"
-	"tiny_cni/internal/vxlan"
+	"tiny_cni/pkg/Reconciler"
+	"tiny_cni/pkg/config"
+	"tiny_cni/pkg/constexpr"
 	"tiny_cni/pkg/devices"
+	"tiny_cni/pkg/events"
 	"tiny_cni/pkg/ipnet"
+	"tiny_cni/pkg/log"
+	node_metadata "tiny_cni/pkg/node"
+	"tiny_cni/pkg/vxlan"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -93,7 +93,7 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 	if err != nil {
 		return nil
 	}
-	podCIDR, err := node_metadata.GetPodCIDR(node)
+	podCIDR, err := node.GetPodCIDR(node)
 	if err != nil {
 		return err
 	}

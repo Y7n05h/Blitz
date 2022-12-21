@@ -5,7 +5,7 @@ import (
 	"os"
 	"syscall"
 	"time"
-	"tiny_cni/internal/constexpr"
+	"tiny_cni/pkg/constexpr"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

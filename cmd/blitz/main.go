@@ -6,11 +6,11 @@ import (
 	"net"
 	"os"
 	"runtime"
-	"tiny_cni/internal/config"
-	"tiny_cni/internal/constexpr"
-	"tiny_cni/internal/log"
+	"tiny_cni/pkg/config"
+	"tiny_cni/pkg/constexpr"
 	"tiny_cni/pkg/devices"
 	"tiny_cni/pkg/ipnet"
+	"tiny_cni/pkg/log"
 
 	"github.com/vishvananda/netlink"
 

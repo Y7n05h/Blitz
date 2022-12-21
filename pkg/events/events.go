@@ -1,9 +1,9 @@
 package events
 
 import (
-	"tiny_cni/internal/log"
-	node_metadata "tiny_cni/internal/node"
 	"tiny_cni/pkg/ipnet"
+	"tiny_cni/pkg/log"
+	node_metadata "tiny_cni/pkg/node"
 
 	corev1 "k8s.io/api/core/v1"
 )
