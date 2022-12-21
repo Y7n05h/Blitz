@@ -86,7 +86,6 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 	if err != nil {
 		log.Log.Fatal("Load Storage Failed:", err)
 	}
-	ctx, _ := context.WithCancel(context.TODO())
 	node, err := Reconciler.GetCurrentNode(clientset, podName)
 	if err != nil {
 		return nil
@@ -108,6 +107,7 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 		return err
 	}
 	log.Log.Debug("Get PodCIDR Success")
+	ctx := context.TODO()
 	reconciler, err := Reconciler.NewReconciler(ctx, clientset, storage, podName, podCIDR, vxlan)
 	if err != nil {
 		log.Log.Fatal("Create Reconciler failed:", err)
