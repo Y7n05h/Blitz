@@ -7,6 +7,7 @@ import (
 	"net"
 	"tiny_cni/pkg/hardware"
 	"tiny_cni/pkg/ipnet"
+	"tiny_cni/pkg/log"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -69,4 +70,15 @@ func GetPodCIDR(node *corev1.Node) (*ipnet.IPNet, error) {
 	}
 	_, ip, err := net.ParseCIDR(node.Spec.PodCIDR)
 	return ipnet.FromNetIPNet(ip), err
+}
+func GetCurrentNode(clientset *kubernetes.Clientset, podName string) (*corev1.Node, error) {
+	node, err := clientset.CoreV1().Nodes().Get(context.TODO(), podName, metav1.GetOptions{})
+	if err != nil {
+		log.Log.Error("Get Node Info Failed:", err)
+		return nil, err
+	}
+	if node == nil {
+		return nil, fmt.Errorf("invaild node")
+	}
+	return node, nil
 }

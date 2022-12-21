@@ -2,18 +2,12 @@ package reconciler
 
 import (
 	"context"
-	"fmt"
 	"time"
 	"tiny_cni/pkg/config"
-	"tiny_cni/pkg/constant"
-	"tiny_cni/pkg/devices"
 	"tiny_cni/pkg/events"
-	"tiny_cni/pkg/hardware"
 	"tiny_cni/pkg/ipnet"
 	"tiny_cni/pkg/log"
-	nodeMetadata "tiny_cni/pkg/node"
 
-	"github.com/vishvananda/netlink"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,39 +30,6 @@ type Reconciler struct {
 	Controller  cache.Controller
 	event       chan *events.Event
 	eventHandle events.EventHandle
-}
-
-func AddVxlanInfo(clientset *kubernetes.Clientset, n *corev1.Node) error {
-	link, err := netlink.LinkByName(constant.VXLANName)
-	if err != nil {
-		return err
-	}
-	hardwareAddr := hardware.FromNetHardware(&link.Attrs().HardwareAddr)
-	oldAnnotations := nodeMetadata.GetAnnotations(n)
-	if oldAnnotations != nil && oldAnnotations.VxlanMacAddr.Equal(hardwareAddr) {
-		return nil
-	}
-	PublicIP, err := devices.GetHostIP()
-	if err != nil {
-		return err
-	}
-	annotations := nodeMetadata.Annotations{VxlanMacAddr: *hardwareAddr, PublicIP: *PublicIP}
-	err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, n)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func GetCurrentNode(clientset *kubernetes.Clientset, podName string) (*corev1.Node, error) {
-	node, err := clientset.CoreV1().Nodes().Get(context.TODO(), podName, metav1.GetOptions{})
-	if err != nil {
-		log.Log.Error("Get Node Info Failed:", err)
-		return nil, err
-	}
-	if node == nil {
-		return nil, fmt.Errorf("invaild node")
-	}
-	return node, nil
 }
 
 func NewReconciler(ctx context.Context, clientset *kubernetes.Clientset, cniStorage *config.PlugStorage, podCIDR *ipnet.IPNet, handle events.EventHandle) (*Reconciler, error) {

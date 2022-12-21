@@ -2,9 +2,15 @@ package vxlan
 
 import (
 	"syscall"
+	"tiny_cni/pkg/constant"
 	"tiny_cni/pkg/devices"
 	"tiny_cni/pkg/events"
+	"tiny_cni/pkg/hardware"
 	"tiny_cni/pkg/log"
+	nodeMetadata "tiny_cni/pkg/node"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/vishvananda/netlink"
 )
@@ -70,4 +76,26 @@ func (v *Handle) DelHandle(event *events.Event) {
 	if err != nil {
 		log.Log.Error("Del ARP Failed: ", err)
 	}
+}
+
+func AddVxlanInfo(clientset *kubernetes.Clientset, n *corev1.Node) error {
+	link, err := netlink.LinkByName(constant.VXLANName)
+	if err != nil {
+		return err
+	}
+	hardwareAddr := hardware.FromNetHardware(&link.Attrs().HardwareAddr)
+	oldAnnotations := nodeMetadata.GetAnnotations(n)
+	if oldAnnotations != nil && oldAnnotations.VxlanMacAddr.Equal(hardwareAddr) {
+		return nil
+	}
+	PublicIP, err := devices.GetHostIP()
+	if err != nil {
+		return err
+	}
+	annotations := nodeMetadata.Annotations{VxlanMacAddr: *hardwareAddr, PublicIP: *PublicIP}
+	err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, n)
+	if err != nil {
+		return err
+	}
+	return nil
 }
