@@ -115,7 +115,10 @@ func (r *Ipam) Alloc(id string) (*ipnet.IPNet, error) {
 		log.Log.Warn("too big Subnet")
 		size = 64
 	}
+	// 减去 2 个不可用于 Pod 的地址（主机号全为 0 或全为 1）
+	//和 1 个 Blitz 的保留地址（主机号为 1）
 	max := (uint64(1) << size) - 3
+
 	log.Log.Debugf("Max Size %d", max)
 	if uint64(r.AllocRecord.Size()) >= max {
 		return nil, fmt.Errorf("subnet have no available ip addr")
@@ -124,7 +127,7 @@ func (r *Ipam) Alloc(id string) (*ipnet.IPNet, error) {
 	for {
 		idx.SetUint64(rand.Uint64() % max)
 		log.Log.Debugf("Rand Number:%v", idx)
-		ipNum := ipToInt(r.Subnet.IP)
+		ipNum := ipToInt(r.Gateway.IP)
 		ip := intToIP(ipNum.Add(ipNum, idx))
 		if !r.Alloced(&ip) {
 			r.AllocRecord.Insert(ip.String(), id)
