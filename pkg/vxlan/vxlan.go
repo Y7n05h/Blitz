@@ -40,7 +40,7 @@ func (v *Handle) AddHandle(event *events.Event) {
 		log.Log.Error("Add ARP Failed: ", err)
 	}
 	//添加 Fdb表中条目
-	log.Log.Debugf("[Reconciler]DEBUG Node:%s annotations:%v %#v", event.Name, event.Attr, event.Attr)
+	log.Log.Debugf("[reconciler]DEBUG Node:%s annotations:%v %#v", event.Name, event.Attr, event.Attr)
 	err = devices.AddFDB(ifIdx, event.Attr.PublicIP.IP, event.Attr.VxlanMacAddr)
 	if err != nil {
 		log.Log.Error("Add Fdb Failed: ", err)

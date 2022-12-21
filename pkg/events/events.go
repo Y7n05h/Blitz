@@ -33,7 +33,7 @@ func FromNode(n *corev1.Node, eventType EventType) *Event {
 		return nil
 	}
 	cidr, err := nodeMetadata.GetPodCIDR(n)
-	log.Log.Debugf("[Reconciler]Node:%s annotations:%v %#v", n.Name, annotations, annotations)
+	log.Log.Debugf("[reconciler]Node:%s annotations:%v %#v", n.Name, annotations, annotations)
 	if err != nil {
 		log.Log.Warn("Get Cidr From Node Failed", err)
 		return nil

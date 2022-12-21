@@ -1,4 +1,4 @@
-package Reconciler
+package reconciler
 
 import (
 	"context"
@@ -72,7 +72,7 @@ func GetCurrentNode(clientset *kubernetes.Clientset, podName string) (*corev1.No
 }
 
 func NewReconciler(ctx context.Context, clientset *kubernetes.Clientset, cniStorage *config.PlugStorage, podCIDR *ipnet.IPNet, handle events.EventHandle) (*Reconciler, error) {
-	log.Log.Debug("New Reconciler")
+	log.Log.Debug("New reconciler")
 	listWatch := cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			return clientset.CoreV1().Nodes().List(ctx, options)
@@ -123,11 +123,11 @@ func NewReconciler(ctx context.Context, clientset *kubernetes.Clientset, cniStor
 	indexer, controller := cache.NewIndexerInformer(&listWatch, &corev1.Node{}, SyncTime, handles, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	reconciler.Node = listers.NewNodeLister(indexer)
 	reconciler.Controller = controller
-	log.Log.Debug("New Reconciler Success")
+	log.Log.Debug("New reconciler Success")
 	return reconciler, nil
 }
 func (r *Reconciler) Run(ctx context.Context) {
-	log.Log.Infof("Run Reconciler")
+	log.Log.Infof("Run reconciler")
 	go r.Controller.Run(ctx.Done())
 	for {
 		select {

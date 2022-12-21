@@ -5,7 +5,6 @@ import (
 	"flag"
 	"net"
 	"os"
-	"tiny_cni/pkg/Reconciler"
 	"tiny_cni/pkg/config"
 	"tiny_cni/pkg/constant"
 	"tiny_cni/pkg/devices"
@@ -13,6 +12,7 @@ import (
 	"tiny_cni/pkg/ipnet"
 	"tiny_cni/pkg/log"
 	nodeMetadata "tiny_cni/pkg/node"
+	"tiny_cni/pkg/reconciler"
 	"tiny_cni/pkg/vxlan"
 
 	"k8s.io/client-go/kubernetes"
@@ -59,7 +59,7 @@ func main() {
 
 // EnvironmentInit will never return!
 func EnvironmentInit(nodeName string, clientset *kubernetes.Clientset) {
-	currentNode, err := Reconciler.GetCurrentNode(clientset, nodeName)
+	currentNode, err := reconciler.GetCurrentNode(clientset, nodeName)
 	if err != nil {
 		log.Log.Fatal("Get Current Node Failed")
 	}
@@ -89,7 +89,7 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 	if err != nil {
 		log.Log.Fatal("Load Storage Failed:", err)
 	}
-	node, err := Reconciler.GetCurrentNode(clientset, podName)
+	node, err := reconciler.GetCurrentNode(clientset, podName)
 	if err != nil {
 		return nil
 	}
@@ -106,7 +106,7 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 			return err
 		}
 		log.Log.Debug("SetupVXLAN Success")
-		err = Reconciler.AddVxlanInfo(clientset, node)
+		err = reconciler.AddVxlanInfo(clientset, node)
 		if err != nil {
 			log.Log.Error("AddVxlanInfo:", err)
 			return err
@@ -118,9 +118,9 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 		}
 	}
 	ctx := context.TODO()
-	reconciler, err := Reconciler.NewReconciler(ctx, clientset, storage, podCIDR, handle)
+	reconciler, err := reconciler.NewReconciler(ctx, clientset, storage, podCIDR, handle)
 	if err != nil {
-		log.Log.Fatal("Create Reconciler failed:", err)
+		log.Log.Fatal("Create reconciler failed:", err)
 	}
 	reconciler.Run(ctx)
 	return nil
