@@ -90,6 +90,12 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 	if err != nil {
 		return nil
 	}
+	podCIDR, err := Reconciler.GetPodCIDR(node)
+	if err != nil {
+		return err
+	}
+	log.Log.Debug("Get PodCIDR Success")
+
 	vxlan, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.NodeCIDR.IP, net.CIDRMask(32, 32)))
 	if err != nil {
 		log.Log.Error("SetupVXLAN:", err)
@@ -102,11 +108,7 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 		return err
 	}
 	log.Log.Debug("AddVXLAN Info Success")
-	podCIDR, err := Reconciler.GetPodCIDR(node)
-	if err != nil {
-		return err
-	}
-	log.Log.Debug("Get PodCIDR Success")
+
 	ctx := context.TODO()
 	reconciler, err := Reconciler.NewReconciler(ctx, clientset, storage, podName, podCIDR, vxlan)
 	if err != nil {
