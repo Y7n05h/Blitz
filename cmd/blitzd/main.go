@@ -8,7 +8,9 @@ import (
 	"tiny_cni/internal/Reconciler"
 	"tiny_cni/internal/config"
 	"tiny_cni/internal/constexpr"
+	"tiny_cni/internal/events"
 	"tiny_cni/internal/log"
+	"tiny_cni/internal/vxlan"
 	"tiny_cni/pkg/devices"
 	"tiny_cni/pkg/ipnet"
 
@@ -95,22 +97,27 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 		return err
 	}
 	log.Log.Debug("Get PodCIDR Success")
-
-	vxlan, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.NodeCIDR.IP, net.CIDRMask(32, 32)))
-	if err != nil {
-		log.Log.Error("SetupVXLAN:", err)
-		return err
+	var handle events.EventHandle
+	{
+		vxlanDevice, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.NodeCIDR.IP, net.CIDRMask(32, 32)))
+		if err != nil {
+			log.Log.Error("SetupVXLAN:", err)
+			return err
+		}
+		log.Log.Debug("SetupVXLAN Success")
+		err = Reconciler.AddVxlanInfo(clientset, node)
+		if err != nil {
+			log.Log.Error("AddVxlanInfo:", err)
+			return err
+		}
+		log.Log.Debug("AddVXLAN Info Success")
+		handle = &vxlan.Handle{
+			NodeName: podName,
+			Vxlan:    vxlanDevice,
+		}
 	}
-	log.Log.Debug("SetupVXLAN Success")
-	err = Reconciler.AddVxlanInfo(clientset, node)
-	if err != nil {
-		log.Log.Error("AddVxlanInfo:", err)
-		return err
-	}
-	log.Log.Debug("AddVXLAN Info Success")
-
 	ctx := context.TODO()
-	reconciler, err := Reconciler.NewReconciler(ctx, clientset, storage, podName, podCIDR, vxlan)
+	reconciler, err := Reconciler.NewReconciler(ctx, clientset, storage, podCIDR, handle)
 	if err != nil {
 		log.Log.Fatal("Create Reconciler failed:", err)
 	}

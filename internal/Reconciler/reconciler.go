@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"syscall"
 	"time"
 	"tiny_cni/internal/config"
 	"tiny_cni/internal/constexpr"
+	"tiny_cni/internal/events"
 	"tiny_cni/internal/log"
 	node_metadata "tiny_cni/internal/node"
 	"tiny_cni/pkg/devices"
@@ -30,13 +30,13 @@ const (
 )
 
 type Reconciler struct {
-	Clientset  *kubernetes.Clientset
-	CniStorage *config.PlugStorage
-	PodName    string
-	vxlan      netlink.Link
-	PodCIDR    ipnet.IPNet
-	Node       listers.NodeLister
-	Controller cache.Controller
+	Clientset   *kubernetes.Clientset
+	CniStorage  *config.PlugStorage
+	PodCIDR     ipnet.IPNet
+	Node        listers.NodeLister
+	Controller  cache.Controller
+	event       chan *events.Event
+	eventHandle events.EventHandle
 }
 
 func GetPodCIDR(node *corev1.Node) (*ipnet.IPNet, error) {
@@ -78,106 +78,8 @@ func GetCurrentNode(clientset *kubernetes.Clientset, podName string) (*corev1.No
 	}
 	return node, nil
 }
-func (r *Reconciler) AddHandle(obj any) {
-	n := obj.(*corev1.Node)
-	if n.Name == r.PodName {
-		return
-	}
-	annotations := node_metadata.GetAnnotations(n)
-	if annotations == nil {
-		return
-	}
-	cidr, err := GetPodCIDR(n)
-	log.Log.Debugf("[Reconciler]Node:%s annotations:%v %#v", n.Name, annotations, annotations)
-	if err != nil {
-		log.Log.Warn("Get Cidr From Node Failed", err)
-		return
-	}
-	ifIdx := r.vxlan.Attrs().Index
-	//添加路由表中
-	route := netlink.Route{
-		LinkIndex: ifIdx,
-		Scope:     netlink.SCOPE_UNIVERSE,
-		Dst:       cidr.ToNetIPNet(),
-		Gw:        cidr.IP,
-		Flags:     syscall.RTNH_F_ONLINK,
-	}
-	err = netlink.RouteAdd(&route)
-	if err != nil {
-		log.Log.Error("Add Route Failed")
-		return
-	}
-	// 添加 Arp 表中条目
-	err = devices.AddARP(ifIdx, cidr.IP, annotations.VxlanMacAddr)
-	if err != nil {
-		log.Log.Error("Add ARP Failed: ", err)
-	}
-	//添加 Fdb表中条目
-	log.Log.Debugf("[Reconciler]DEBUG Node:%s annotations:%v %#v", n.Name, annotations, annotations)
-	err = devices.AddFDB(ifIdx, annotations.PublicIP.IP, annotations.VxlanMacAddr)
-	if err != nil {
-		log.Log.Error("Add Fdb Failed: ", err)
-	}
 
-}
-func (r *Reconciler) UpdateHandle(oldObj, newObj any) {
-	oldNode := oldObj.(*corev1.Node)
-	newNode := newObj.(*corev1.Node)
-	if oldNode.Name == r.PodName || newNode.Name == r.PodName {
-		return
-	}
-	oldAnnotations := node_metadata.GetAnnotations(oldNode)
-	newAnnotations := node_metadata.GetAnnotations(newNode)
-	if oldAnnotations != nil && newAnnotations != nil && oldAnnotations.VxlanMacAddr.Equal(&newAnnotations.VxlanMacAddr) {
-		return
-	}
-	if oldAnnotations != nil {
-		r.DeleteHandle(newObj)
-	}
-	if newAnnotations != nil {
-		r.AddHandle(newObj)
-	}
-}
-
-func (r *Reconciler) DeleteHandle(obj any) {
-	n := obj.(*corev1.Node)
-	if n.Name == r.PodName {
-		return
-	}
-	annotations := node_metadata.GetAnnotations(n)
-	if annotations == nil {
-		return
-	}
-	cidr, err := GetPodCIDR(n)
-	if err != nil {
-		log.Log.Warn("Get Cidr From Node Failed", err)
-		return
-	}
-
-	//删除路由表中条目
-	route := devices.GetRouteByDist(r.vxlan.Attrs().Index, *cidr)
-	if route != nil {
-		err := netlink.RouteDel(route)
-		if err != nil {
-			log.Log.Error("Del Route Failed:", err)
-		}
-	}
-	// 删除Arp表中条目
-	neigh := devices.GetNeighByIP(r.vxlan.Attrs().Index, cidr.IP)
-	if neigh != nil {
-		err := netlink.NeighDel(neigh)
-		if err != nil {
-			log.Log.Error("Delete Neigh Failed")
-		}
-	}
-	//删除 Fdb表中条目
-	err = devices.DelFDB(r.vxlan.Attrs().Index, annotations.PublicIP.IP, annotations.VxlanMacAddr)
-	if err != nil {
-		log.Log.Error("Del ARP Failed: ", err)
-	}
-
-}
-func NewReconciler(ctx context.Context, clientset *kubernetes.Clientset, cniStorage *config.PlugStorage, podName string, podCIDR *ipnet.IPNet, vxlan netlink.Link) (*Reconciler, error) {
+func NewReconciler(ctx context.Context, clientset *kubernetes.Clientset, cniStorage *config.PlugStorage, podCIDR *ipnet.IPNet, handle events.EventHandle) (*Reconciler, error) {
 	log.Log.Debug("New Reconciler")
 	listWatch := cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
@@ -188,11 +90,42 @@ func NewReconciler(ctx context.Context, clientset *kubernetes.Clientset, cniStor
 		},
 		DisableChunking: false,
 	}
-	reconciler := &Reconciler{Clientset: clientset, CniStorage: cniStorage, PodName: podName, PodCIDR: *podCIDR, vxlan: vxlan}
+	eventCh := make(chan *events.Event, 16)
+	reconciler := &Reconciler{Clientset: clientset, CniStorage: cniStorage, PodCIDR: *podCIDR, event: eventCh, eventHandle: handle}
 	handles := cache.ResourceEventHandlerFuncs{
-		AddFunc:    reconciler.AddHandle,
-		UpdateFunc: reconciler.UpdateHandle,
-		DeleteFunc: reconciler.DeleteHandle,
+		AddFunc: func(obj any) {
+			node := obj.(*corev1.Node)
+			event := events.FromNode(node, events.Add)
+			if event == nil {
+				return
+			}
+			eventCh <- event
+		},
+		UpdateFunc: func(oldObj, newObj any) {
+			oldNode := oldObj.(*corev1.Node)
+			// Note: Use events.Add is not a bug. We need compare two events without type.
+			oldNodeEvent := events.FromNode(oldNode, events.Add)
+			newNode := newObj.(*corev1.Node)
+			newNodeEvent := events.FromNode(newNode, events.Add)
+			if oldNodeEvent.Equal(newNodeEvent) {
+				return
+			}
+			if oldNodeEvent != nil {
+				oldNodeEvent.Type = events.Del
+				eventCh <- oldNodeEvent
+			}
+			if newNodeEvent != nil {
+				eventCh <- newNodeEvent
+			}
+		},
+		DeleteFunc: func(obj any) {
+			node := obj.(*corev1.Node)
+			event := events.FromNode(node, events.Del)
+			if event == nil {
+				return
+			}
+			eventCh <- event
+		},
 	}
 	log.Log.Debug("New IndexerInformer")
 	indexer, controller := cache.NewIndexerInformer(&listWatch, &corev1.Node{}, SyncTime, handles, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
@@ -203,5 +136,18 @@ func NewReconciler(ctx context.Context, clientset *kubernetes.Clientset, cniStor
 }
 func (r *Reconciler) Run(ctx context.Context) {
 	log.Log.Infof("Run Reconciler")
-	r.Controller.Run(ctx.Done())
+	go r.Controller.Run(ctx.Done())
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case event := <-r.event:
+			switch event.Type {
+			case events.Add:
+				r.eventHandle.AddHandle(event)
+			case events.Del:
+				r.eventHandle.DelHandle(event)
+			}
+		}
+	}
 }
