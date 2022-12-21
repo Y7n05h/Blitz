@@ -93,7 +93,7 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 	if err != nil {
 		return nil
 	}
-	podCIDR, err := node.GetPodCIDR(node)
+	podCIDR, err := node_metadata.GetPodCIDR(node)
 	if err != nil {
 		return err
 	}
