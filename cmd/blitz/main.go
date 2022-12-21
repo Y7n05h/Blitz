@@ -7,7 +7,7 @@ import (
 	"os"
 	"runtime"
 	"tiny_cni/pkg/config"
-	"tiny_cni/pkg/constexpr"
+	"tiny_cni/pkg/constant"
 	"tiny_cni/pkg/devices"
 	"tiny_cni/pkg/ipnet"
 	"tiny_cni/pkg/log"
@@ -154,8 +154,8 @@ func cmdCheck(args *skel.CmdArgs) error {
 	return err
 }
 func main() {
-	log.InitLog(constexpr.EnableLog, false, "blitz")
+	log.InitLog(constant.EnableLog, false, "blitz")
 	log.Log.Debug("[exec]")
-	fullVer := fmt.Sprintf("CNI Plugin %s version %s (%s/%s)", constexpr.Program, constexpr.Version, runtime.GOOS, runtime.GOARCH)
+	fullVer := fmt.Sprintf("CNI Plugin %s version %s (%s/%s)", constant.Program, constant.Version, runtime.GOOS, runtime.GOARCH)
 	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, fullVer)
 }

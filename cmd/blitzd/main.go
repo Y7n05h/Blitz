@@ -7,7 +7,7 @@ import (
 	"os"
 	"tiny_cni/pkg/Reconciler"
 	"tiny_cni/pkg/config"
-	"tiny_cni/pkg/constexpr"
+	"tiny_cni/pkg/constant"
 	"tiny_cni/pkg/devices"
 	"tiny_cni/pkg/events"
 	"tiny_cni/pkg/ipnet"
@@ -31,7 +31,7 @@ func init() {
 	flag.StringVar(&FlagsValue.clusterCIDR, "ClusterCIDR", "", "")
 }
 func main() {
-	log.InitLog(constexpr.EnableLog, false, "blitzd")
+	log.InitLog(constant.EnableLog, false, "blitzd")
 	log.Log.Debugf("blitzd,start")
 	flag.Parse()
 	log.Log.Debugf("flags:%#v", FlagsValue)

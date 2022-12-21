@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 	"tiny_cni/pkg/config"
-	"tiny_cni/pkg/constexpr"
+	"tiny_cni/pkg/constant"
 	"tiny_cni/pkg/devices"
 	"tiny_cni/pkg/events"
 	"tiny_cni/pkg/hardware"
@@ -39,7 +39,7 @@ type Reconciler struct {
 }
 
 func AddVxlanInfo(clientset *kubernetes.Clientset, n *corev1.Node) error {
-	link, err := netlink.LinkByName(constexpr.VXLANName)
+	link, err := netlink.LinkByName(constant.VXLANName)
 	if err != nil {
 		return err
 	}

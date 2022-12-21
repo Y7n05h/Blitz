@@ -1,4 +1,4 @@
-package constexpr
+package constant
 
 const (
 	Program = "blitz"

@@ -6,7 +6,7 @@ import (
 	"net"
 	"os"
 	"syscall"
-	"tiny_cni/pkg/constexpr"
+	"tiny_cni/pkg/constant"
 	"tiny_cni/pkg/hardware"
 	"tiny_cni/pkg/ipnet"
 	"tiny_cni/pkg/log"
@@ -37,7 +37,7 @@ func CheckLinkContainIPNNet(gateway *ipnet.IPNet, br netlink.Link) bool {
 }
 func GetBridge(gateway *ipnet.IPNet) (netlink.Link, error) {
 	var linkErr netlink.LinkNotFoundError
-	if br, err := netlink.LinkByName(constexpr.BridgeName); err == nil {
+	if br, err := netlink.LinkByName(constant.BridgeName); err == nil {
 		if br != nil && CheckLinkContainIPNNet(gateway, br) {
 			return br, nil
 		}
@@ -46,7 +46,7 @@ func GetBridge(gateway *ipnet.IPNet) (netlink.Link, error) {
 		log.Log.Warnf("Not Expect Link Error:%v", err)
 		return nil, err
 	}
-	br, err := netlink.LinkByName(constexpr.BridgeName)
+	br, err := netlink.LinkByName(constant.BridgeName)
 	if err != nil {
 		if !errors.As(err, &linkErr) {
 			log.Log.Warnf("Not Expect Link Error:%v", err)
@@ -65,8 +65,8 @@ func GetBridge(gateway *ipnet.IPNet) (netlink.Link, error) {
 newBr:
 	br = &netlink.Bridge{
 		LinkAttrs: netlink.LinkAttrs{
-			Name:   constexpr.BridgeName,
-			MTU:    constexpr.Mtu,
+			Name:   constant.BridgeName,
+			MTU:    constant.Mtu,
 			TxQLen: -1,
 		},
 	}
@@ -75,7 +75,7 @@ addAddr:
 		return nil, err
 	}
 
-	dev, err := netlink.LinkByName(constexpr.BridgeName)
+	dev, err := netlink.LinkByName(constant.BridgeName)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *ipnet.IPNe
 		}
 		log.Log.Debugf("Set lo up")
 		// create the veth pair in the container and move host end into host netns
-		host, container, err := ip.SetupVeth(ifName, constexpr.Mtu, "", hostNS)
+		host, container, err := ip.SetupVeth(ifName, constant.Mtu, "", hostNS)
 		if err != nil {
 			return err
 		}
@@ -212,7 +212,7 @@ func GetDefaultGateway() (*netlink.Link, error) {
 	return nil, fmt.Errorf("get Default Gateway failed")
 }
 func SetupVXLAN(subnet *ipnet.IPNet) (*netlink.Vxlan, error) {
-	link, err := netlink.LinkByName(constexpr.VXLANName)
+	link, err := netlink.LinkByName(constant.VXLANName)
 	var linkErr netlink.LinkNotFoundError
 	if err == nil {
 		log.Log.Debugf("Found VXLAN exist")
@@ -235,21 +235,21 @@ func SetupVXLAN(subnet *ipnet.IPNet) (*netlink.Vxlan, error) {
 }
 func createVXLAN(ifIdx int) (*netlink.Vxlan, error) {
 	var linkErr netlink.LinkNotFoundError
-	exist, err := netlink.LinkByName(constexpr.VXLANName)
+	exist, err := netlink.LinkByName(constant.VXLANName)
 	if errors.As(err, &linkErr) && exist != nil {
 		log.Log.Infof("VXLAN exist")
 		return exist.(*netlink.Vxlan), nil
 	}
 	attrs := netlink.NewLinkAttrs()
-	attrs.Name = constexpr.VXLANName
+	attrs.Name = constant.VXLANName
 	addr := hardware.GenHardwareAddr()
 	attrs.HardwareAddr = addr.ToNetHardwareAddr()
 	vtep := netlink.Vxlan{
 		LinkAttrs:    attrs,
-		VxlanId:      constexpr.VxlanId,
+		VxlanId:      constant.VxlanId,
 		VtepDevIndex: ifIdx,
 		Learning:     false,
-		Port:         constexpr.VXLANPort,
+		Port:         constant.VXLANPort,
 	}
 	log.Log.Debugf("VXLAN: mac addr:%s", vtep.Attrs().HardwareAddr.String())
 	err = netlink.LinkAdd(&vtep)

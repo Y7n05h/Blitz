@@ -5,7 +5,7 @@ import (
 	"os"
 	"syscall"
 	"time"
-	"tiny_cni/pkg/constexpr"
+	"tiny_cni/pkg/constant"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -60,7 +60,7 @@ func InitLog(enableLog bool, useTerminal bool, prefix string) {
 	//OutPutEnv()
 }
 func init() {
-	InitLog(constexpr.EnableLog, true, "debug")
+	InitLog(constant.EnableLog, true, "debug")
 }
 func OutPutEnv() {
 	env := os.Environ()
