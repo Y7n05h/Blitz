@@ -212,11 +212,11 @@ func GetDefaultGateway() (*netlink.Link, error) {
 	return nil, fmt.Errorf("get Default Gateway failed")
 }
 func SetupVXLAN(subnet *ipnet.IPNet) (*netlink.Vxlan, error) {
-	_, err := netlink.LinkByName(constexpr.VXLANName)
+	link, err := netlink.LinkByName(constexpr.VXLANName)
 	var linkErr netlink.LinkNotFoundError
 	if err == nil {
 		log.Log.Debugf("Found VXLAN exist")
-		return nil, nil
+		return link.(*netlink.Vxlan), nil
 	} else if !errors.As(err, &linkErr) {
 		log.Log.Error("No Expect Error: ", err)
 		return nil, err
