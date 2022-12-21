@@ -22,7 +22,7 @@ const (
 )
 
 type Annotations struct {
-	VxlanMacAddr hardware.Address `json:"omitempty"`
+	VxlanMacAddr hardware.Address `json:"vxlan,omitempty"`
 	PublicIP     ipnet.IPNet
 }
 
