@@ -1,12 +1,12 @@
 package reconciler
 
 import (
+	"blitz/pkg/config"
+	"blitz/pkg/events"
+	"blitz/pkg/ipnet"
+	"blitz/pkg/log"
 	"context"
 	"time"
-	"tiny_cni/pkg/config"
-	"tiny_cni/pkg/events"
-	"tiny_cni/pkg/ipnet"
-	"tiny_cni/pkg/log"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

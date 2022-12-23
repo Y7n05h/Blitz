@@ -1,13 +1,13 @@
 package config
 
 import (
+	"blitz/pkg/ipam"
+	"blitz/pkg/ipnet"
+	"blitz/pkg/log"
 	"encoding/json"
 	"errors"
 	"os"
 	"path"
-	"tiny_cni/pkg/ipam"
-	"tiny_cni/pkg/ipnet"
-	"tiny_cni/pkg/log"
 
 	"github.com/alexflint/go-filemutex"
 	"github.com/containernetworking/cni/pkg/types"

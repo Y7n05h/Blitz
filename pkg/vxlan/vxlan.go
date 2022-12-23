@@ -1,13 +1,13 @@
 package vxlan
 
 import (
+	"blitz/pkg/constant"
+	"blitz/pkg/devices"
+	"blitz/pkg/events"
+	"blitz/pkg/hardware"
+	"blitz/pkg/log"
+	nodeMetadata "blitz/pkg/node"
 	"syscall"
-	"tiny_cni/pkg/constant"
-	"tiny_cni/pkg/devices"
-	"tiny_cni/pkg/events"
-	"tiny_cni/pkg/hardware"
-	"tiny_cni/pkg/log"
-	nodeMetadata "tiny_cni/pkg/node"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"

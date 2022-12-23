@@ -1,15 +1,15 @@
 package devices
 
 import (
+	"blitz/pkg/constant"
+	"blitz/pkg/hardware"
+	"blitz/pkg/ipnet"
+	"blitz/pkg/log"
 	"errors"
 	"fmt"
 	"net"
 	"os"
 	"syscall"
-	"tiny_cni/pkg/constant"
-	"tiny_cni/pkg/hardware"
-	"tiny_cni/pkg/ipnet"
-	"tiny_cni/pkg/log"
 
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ns"

@@ -1,4 +1,4 @@
-module tiny_cni
+module blitz
 
 go 1.19
 

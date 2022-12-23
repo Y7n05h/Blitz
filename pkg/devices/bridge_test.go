@@ -1,9 +1,9 @@
 package devices
 
 import (
+	"blitz/pkg/hardware"
+	"blitz/pkg/ipnet"
 	"testing"
-	"tiny_cni/pkg/hardware"
-	"tiny_cni/pkg/ipnet"
 )
 
 func TestGetBridge(t *testing.T) {

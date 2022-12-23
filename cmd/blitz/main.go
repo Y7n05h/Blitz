@@ -1,15 +1,15 @@
 package main
 
 import (
+	"blitz/pkg/config"
+	"blitz/pkg/constant"
+	"blitz/pkg/devices"
+	"blitz/pkg/ipnet"
+	"blitz/pkg/log"
 	"errors"
 	"fmt"
 	"os"
 	"runtime"
-	"tiny_cni/pkg/config"
-	"tiny_cni/pkg/constant"
-	"tiny_cni/pkg/devices"
-	"tiny_cni/pkg/ipnet"
-	"tiny_cni/pkg/log"
 
 	"github.com/vishvananda/netlink"
 

@@ -1,19 +1,19 @@
 package main
 
 import (
+	"blitz/pkg/config"
+	"blitz/pkg/constant"
+	"blitz/pkg/devices"
+	"blitz/pkg/events"
+	"blitz/pkg/ipnet"
+	"blitz/pkg/log"
+	nodeMetadata "blitz/pkg/node"
+	Reconciler "blitz/pkg/reconciler"
+	"blitz/pkg/vxlan"
 	"context"
 	"flag"
 	"net"
 	"os"
-	"tiny_cni/pkg/config"
-	"tiny_cni/pkg/constant"
-	"tiny_cni/pkg/devices"
-	"tiny_cni/pkg/events"
-	"tiny_cni/pkg/ipnet"
-	"tiny_cni/pkg/log"
-	nodeMetadata "tiny_cni/pkg/node"
-	Reconciler "tiny_cni/pkg/reconciler"
-	"tiny_cni/pkg/vxlan"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

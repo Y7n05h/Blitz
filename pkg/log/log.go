@@ -1,11 +1,11 @@
 package log
 
 import (
+	"blitz/pkg/constant"
 	"fmt"
 	"os"
 	"syscall"
 	"time"
-	"tiny_cni/pkg/constant"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

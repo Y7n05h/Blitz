@@ -1,6 +1,8 @@
 package ipam
 
 import (
+	"blitz/pkg/ipnet"
+	"blitz/pkg/log"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -8,8 +10,6 @@ import (
 	"net"
 	"os"
 	"time"
-	"tiny_cni/pkg/ipnet"
-	"tiny_cni/pkg/log"
 
 	cip "github.com/containernetworking/plugins/pkg/ip"
 	"github.com/vishalkuo/bimap"

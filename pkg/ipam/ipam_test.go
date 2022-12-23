@@ -1,10 +1,10 @@
 package ipam
 
 import (
+	"blitz/pkg/ipnet"
+	"blitz/pkg/log"
 	"encoding/json"
 	"testing"
-	"tiny_cni/pkg/ipnet"
-	"tiny_cni/pkg/log"
 )
 
 func checkIPNetUnderSubnet(t *testing.T, ipNet ipnet.IPNet, subnet ipnet.IPNet) {

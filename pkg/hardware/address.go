@@ -1,10 +1,10 @@
 package hardware
 
 import (
+	"blitz/pkg/log"
 	"crypto/rand"
 	"encoding/json"
 	"net"
-	"tiny_cni/pkg/log"
 )
 
 type Address net.HardwareAddr
