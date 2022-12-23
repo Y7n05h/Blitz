@@ -5,6 +5,7 @@ import (
 	"blitz/pkg/constant"
 	"blitz/pkg/devices"
 	"blitz/pkg/events"
+	"blitz/pkg/host_gw"
 	"blitz/pkg/ipnet"
 	"blitz/pkg/log"
 	nodeMetadata "blitz/pkg/node"
@@ -24,6 +25,7 @@ type Flags struct {
 	nwCfgGen    bool
 	version     bool
 	clusterCIDR string
+	mode        string
 }
 
 var FlagsValue Flags
@@ -32,6 +34,7 @@ func init() {
 	flag.BoolVar(&FlagsValue.nwCfgGen, "NetworkCfgGen", false, "Generator Network CniRuntimeCfg")
 	flag.BoolVar(&FlagsValue.version, "version", false, "")
 	flag.StringVar(&FlagsValue.clusterCIDR, "ClusterCIDR", "", "")
+	flag.StringVar(&FlagsValue.mode, "mode", "vxlan", "Mode of Blitz (vxlan/host-gw)")
 }
 func main() {
 	log.InitLog(constant.EnableLog, false, "blitzd")
@@ -106,7 +109,8 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 	}
 	log.Log.Debug("Get PodCIDR Success")
 	var handle events.EventHandle
-	{
+	switch FlagsValue.mode {
+	case "vxlan":
 		vxlanDevice, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.NodeCIDR.IP, net.CIDRMask(32, 32)))
 		if err != nil {
 			log.Log.Error("SetupVXLAN:", err)
@@ -123,6 +127,15 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 			NodeName: podName,
 			Vxlan:    vxlanDevice,
 		}
+	case "host-gw":
+		defaultLink, err := devices.GetDefaultGateway()
+		if err != nil {
+			log.Log.Debug("No valid route")
+			return err
+		}
+		handle = &host_gw.Handle{NodeName: podName, Link: *defaultLink}
+	default:
+		log.Log.Fatal("Invalid mode.")
 	}
 	ctx := context.TODO()
 	reconciler, err := Reconciler.NewReconciler(ctx, clientset, storage, podCIDR, handle)
