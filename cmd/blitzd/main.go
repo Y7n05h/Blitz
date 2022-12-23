@@ -128,6 +128,15 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 			log.Log.Debug("No valid route")
 			return err
 		}
+		hostIP, err := devices.GetHostIP()
+		if err != nil {
+			return err
+		}
+		annotations := nodeMetadata.Annotations{PublicIP: *hostIP}
+		err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, node)
+		if err != nil {
+			return err
+		}
 		handle = &host_gw.Handle{NodeName: nodeName, Link: *defaultLink}
 	default:
 		log.Log.Fatal("Invalid mode.")
