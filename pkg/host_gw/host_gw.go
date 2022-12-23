@@ -26,7 +26,7 @@ func (h *Handle) AddHandle(event *events.Event) {
 	}
 	err := netlink.RouteAdd(&route)
 	if err != nil {
-		log.Log.Error("Add Route Failed")
+		log.Log.Errorf("Add Route Failed:%v", err)
 		return
 	}
 }
@@ -42,7 +42,7 @@ func (h *Handle) DelHandle(event *events.Event) {
 	}
 	err := netlink.RouteDel(&route)
 	if err != nil {
-		log.Log.Error("Add Route Failed")
+		log.Log.Errorf("Add Route Failed:%v", err)
 		return
 	}
 }
