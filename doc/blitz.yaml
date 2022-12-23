@@ -103,7 +103,7 @@ spec:
       serviceAccountName: blitz
       initContainers:
       - name: install-cni-plugin
-        image: blitz:0.1.5
+        image: blitz:0.1.6
         imagePullPolicy: Never
         command:
         - cp
@@ -115,7 +115,7 @@ spec:
         - name: cni-plugin
           mountPath: /opt/cni/bin
       - name: install-cni
-        image: blitz:0.1.5
+        image: blitz:0.1.6
         imagePullPolicy: Never
         command:
         - cp
@@ -129,13 +129,14 @@ spec:
         - name: blitz-cfg
           mountPath: /etc/kube-blitz/
       - name: install-net-cfg
-        image: blitz:0.1.5
+        image: blitz:0.1.6
         imagePullPolicy: Never
         command:
           - /opt/bin/blitzd
         args:
           - --NetworkCfgGen=true
           - --ClusterCIDR=10.244.0.0/16
+          - --mode=host-gw
         env:
           - name: NODE_NAME
             valueFrom:
@@ -148,13 +149,14 @@ spec:
             mountPath: /tmp
       containers:
       - name: kube-blitz
-        image: blitz:0.1.5
+        image: blitz:0.1.6
         imagePullPolicy: Never
         command:
         - /opt/bin/blitzd
         args:
         # get cluster cidr from kube-controller-manager
         - --ClusterCIDR=10.244.0.0/16
+        - --mode=host-gw
         resources:
           requests:
             cpu: "100m"

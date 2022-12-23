@@ -125,9 +125,9 @@ func (r *Ipam) Alloc(id string) (*ipnet.IPNet, error) {
 	}
 	idx := big.NewInt(0)
 	for {
-		idx.SetUint64(rand.Uint64() % max)
+		idx.SetUint64((rand.Uint64() % max) + 2)
 		log.Log.Debugf("Rand Number:%v", idx)
-		ipNum := ipToInt(r.Gateway.IP)
+		ipNum := ipToInt(r.Subnet.IP)
 		ip := intToIP(ipNum.Add(ipNum, idx))
 		if !r.Alloced(&ip) {
 			r.AllocRecord.Insert(ip.String(), id)
