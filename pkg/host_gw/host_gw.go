@@ -3,7 +3,6 @@ package host_gw
 import (
 	"blitz/pkg/events"
 	"blitz/pkg/log"
-	cip "github.com/containernetworking/plugins/pkg/ip"
 	"github.com/vishvananda/netlink"
 )
 
@@ -22,7 +21,7 @@ func (h *Handle) AddHandle(event *events.Event) {
 		LinkIndex: h.Link.Attrs().Index,
 		Scope:     netlink.SCOPE_UNIVERSE,
 		Dst:       event.PodCIDR.ToNetIPNet(),
-		Gw:        cip.NextIP(event.PodCIDR.IP),
+		Gw:        event.Attr.PublicIP.IP,
 	}
 	err := netlink.RouteAdd(&route)
 	if err != nil {
@@ -38,7 +37,7 @@ func (h *Handle) DelHandle(event *events.Event) {
 		LinkIndex: h.Link.Attrs().Index,
 		Scope:     netlink.SCOPE_UNIVERSE,
 		Dst:       event.PodCIDR.ToNetIPNet(),
-		Gw:        cip.NextIP(event.PodCIDR.IP),
+		Gw:        event.Attr.PublicIP.IP,
 	}
 	err := netlink.RouteDel(&route)
 	if err != nil {
