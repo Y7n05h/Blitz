@@ -94,12 +94,12 @@ func EnvironmentInit(nodeName string, clientset *kubernetes.Clientset) {
 	log.Log.Infof("[blitzd]Run Success")
 	os.Exit(0)
 }
-func Run(podName string, clientset *kubernetes.Clientset) error {
+func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	storage, err := config.LoadStorage()
 	if err != nil {
 		log.Log.Fatal("Load Storage Failed:", err)
 	}
-	node, err := nodeMetadata.GetCurrentNode(clientset, podName)
+	node, err := nodeMetadata.GetCurrentNode(clientset, nodeName)
 	if err != nil {
 		return nil
 	}
@@ -124,7 +124,7 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 		}
 		log.Log.Debug("AddVXLAN Info Success")
 		handle = &vxlan.Handle{
-			NodeName: podName,
+			NodeName: nodeName,
 			Vxlan:    vxlanDevice,
 		}
 	case "host-gw":
@@ -133,7 +133,7 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 			log.Log.Debug("No valid route")
 			return err
 		}
-		handle = &host_gw.Handle{NodeName: podName, Link: *defaultLink}
+		handle = &host_gw.Handle{NodeName: nodeName, Link: *defaultLink}
 	default:
 		log.Log.Fatal("Invalid mode.")
 	}
