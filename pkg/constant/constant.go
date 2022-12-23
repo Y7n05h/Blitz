@@ -1,9 +1,18 @@
 package constant
 
-const (
-	Program = "blitz"
-	Version = "0.1.0"
+import "fmt"
+
+// 下面的变量将在编译时被命令行参数覆盖
+var (
+	Version   string
+	Revision  string
+	BuildTime string
 )
+
+func FullVersion() string {
+	return fmt.Sprintf("%s %s %s", Version, Revision, BuildTime)
+}
+
 const (
 	EnableLog           = true
 	LogOutputToTerminal = false

@@ -12,6 +12,7 @@ import (
 	"blitz/pkg/vxlan"
 	"context"
 	"flag"
+	"fmt"
 	"net"
 	"os"
 
@@ -21,6 +22,7 @@ import (
 
 type Flags struct {
 	nwCfgGen    bool
+	version     bool
 	clusterCIDR string
 }
 
@@ -28,6 +30,7 @@ var FlagsValue Flags
 
 func init() {
 	flag.BoolVar(&FlagsValue.nwCfgGen, "NetworkCfgGen", false, "Generator Network CniRuntimeCfg")
+	flag.BoolVar(&FlagsValue.version, "version", false, "")
 	flag.StringVar(&FlagsValue.clusterCIDR, "ClusterCIDR", "", "")
 }
 func main() {
@@ -35,6 +38,10 @@ func main() {
 	log.Log.Debugf("blitzd,start")
 	flag.Parse()
 	log.Log.Debugf("flags:%#v", FlagsValue)
+	if FlagsValue.version {
+		fmt.Printf("Blitzd %s", constant.FullVersion())
+		os.Exit(0)
+	}
 
 	nodeName := os.Getenv("NODE_NAME")
 	kubeCfg, err := rest.InClusterConfig()

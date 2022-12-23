@@ -151,6 +151,6 @@ func cmdCheck(args *skel.CmdArgs) error {
 func main() {
 	log.InitLog(constant.EnableLog, false, "blitz")
 	log.Log.Debug("[exec]")
-	fullVer := fmt.Sprintf("CNI Plugin %s version %s (%s/%s)", constant.Program, constant.Version, runtime.GOOS, runtime.GOARCH)
+	fullVer := fmt.Sprintf("Blitz %s\tRuntime:%s %s", constant.FullVersion(), runtime.GOOS, runtime.GOARCH)
 	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, fullVer)
 }
