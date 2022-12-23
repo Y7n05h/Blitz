@@ -28,20 +28,20 @@ type Flags struct {
 	mode        string
 }
 
-var FlagsValue Flags
+var opts Flags
 
 func init() {
-	flag.BoolVar(&FlagsValue.nwCfgGen, "NetworkCfgGen", false, "Generator Network CniRuntimeCfg")
-	flag.BoolVar(&FlagsValue.version, "version", false, "")
-	flag.StringVar(&FlagsValue.clusterCIDR, "ClusterCIDR", "", "")
-	flag.StringVar(&FlagsValue.mode, "mode", "vxlan", "Mode of Blitz (vxlan/host-gw)")
+	flag.BoolVar(&opts.nwCfgGen, "NetworkCfgGen", false, "Generator Network CniRuntimeCfg")
+	flag.BoolVar(&opts.version, "version", false, "")
+	flag.StringVar(&opts.clusterCIDR, "ClusterCIDR", "", "")
+	flag.StringVar(&opts.mode, "mode", "vxlan", "Mode of Blitz (vxlan/host-gw)")
 }
 func main() {
 	log.InitLog(constant.EnableLog, false, "blitzd")
 	log.Log.Debugf("blitzd,start")
 	flag.Parse()
-	log.Log.Debugf("flags:%#v", FlagsValue)
-	if FlagsValue.version {
+	log.Log.Debugf("flags:%#v", opts)
+	if opts.version {
 		fmt.Printf("Blitzd %s", constant.FullVersion())
 		os.Exit(0)
 	}
@@ -57,7 +57,7 @@ func main() {
 		log.Log.Fatal("Get clientSet Failed", err)
 	}
 	log.Log.Debugf("Get clientset Success")
-	if FlagsValue.nwCfgGen {
+	if opts.nwCfgGen {
 		EnvironmentInit(nodeName, clientset)
 	} else {
 		err := Run(nodeName, clientset)
@@ -78,7 +78,7 @@ func EnvironmentInit(nodeName string, clientset *kubernetes.Clientset) {
 	if err != nil {
 		log.Log.Fatal("Get Node CIDR Failed")
 	}
-	clusterCIDR, err := ipnet.ParseCIDR(FlagsValue.clusterCIDR)
+	clusterCIDR, err := ipnet.ParseCIDR(opts.clusterCIDR)
 	if err != nil {
 		log.Log.Fatal("Parse clusterCIDR Error:", err)
 	}
@@ -109,7 +109,7 @@ func Run(podName string, clientset *kubernetes.Clientset) error {
 	}
 	log.Log.Debug("Get PodCIDR Success")
 	var handle events.EventHandle
-	switch FlagsValue.mode {
+	switch opts.mode {
 	case "vxlan":
 		vxlanDevice, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.NodeCIDR.IP, net.CIDRMask(32, 32)))
 		if err != nil {
