@@ -3,7 +3,6 @@ package reconciler
 import (
 	"blitz/pkg/config"
 	"blitz/pkg/events"
-	"blitz/pkg/ipnet"
 	"blitz/pkg/log"
 	"context"
 	"time"
@@ -25,14 +24,13 @@ const (
 type Reconciler struct {
 	Clientset   *kubernetes.Clientset
 	CniStorage  *config.PlugStorage
-	PodCIDR     ipnet.IPNet
 	Node        listers.NodeLister
 	Controller  cache.Controller
 	event       chan *events.Event
 	eventHandle events.EventHandle
 }
 
-func NewReconciler(ctx context.Context, clientset *kubernetes.Clientset, cniStorage *config.PlugStorage, podCIDR *ipnet.IPNet, handle events.EventHandle) (*Reconciler, error) {
+func NewReconciler(ctx context.Context, clientset *kubernetes.Clientset, cniStorage *config.PlugStorage, handle events.EventHandle) (*Reconciler, error) {
 	log.Log.Debug("New reconciler")
 	listWatch := cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
@@ -44,7 +42,7 @@ func NewReconciler(ctx context.Context, clientset *kubernetes.Clientset, cniStor
 		DisableChunking: false,
 	}
 	eventCh := make(chan *events.Event, 16)
-	reconciler := &Reconciler{Clientset: clientset, CniStorage: cniStorage, PodCIDR: *podCIDR, event: eventCh, eventHandle: handle}
+	reconciler := &Reconciler{Clientset: clientset, CniStorage: cniStorage, event: eventCh, eventHandle: handle}
 	handles := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
 			node := obj.(*corev1.Node)

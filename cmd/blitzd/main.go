@@ -103,11 +103,6 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	if err != nil {
 		return nil
 	}
-	podCIDR, err := nodeMetadata.GetPodCIDR(node)
-	if err != nil {
-		return err
-	}
-	log.Log.Debug("Get PodCIDR Success")
 	var handle events.EventHandle
 	switch opts.mode {
 	case "vxlan":
@@ -138,7 +133,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 		log.Log.Fatal("Invalid mode.")
 	}
 	ctx := context.TODO()
-	reconciler, err := Reconciler.NewReconciler(ctx, clientset, storage, podCIDR, handle)
+	reconciler, err := Reconciler.NewReconciler(ctx, clientset, storage, handle)
 	if err != nil {
 		log.Log.Fatal("Create Reconciler failed:", err)
 	}
