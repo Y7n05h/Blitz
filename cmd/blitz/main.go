@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"net"
 	"os"
 	"runtime"
 	"tiny_cni/pkg/config"
@@ -70,10 +69,6 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	if _, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.NodeCIDR.IP, net.CIDRMask(32, 32))); err != nil {
-		log.Log.Debug("SetupVXLAN:", err)
-		return err
-	}
 	result := types100.Result{
 		IPs: []*types100.IPConfig{
 			{
