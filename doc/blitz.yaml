@@ -103,7 +103,7 @@ spec:
       serviceAccountName: blitz
       initContainers:
       - name: install-cni-plugin
-        image: blitz:0.1.8
+        image: blitz:0.1.5-19-g7d286e2
         imagePullPolicy: Never
         command:
         - cp
@@ -115,7 +115,7 @@ spec:
         - name: cni-plugin
           mountPath: /opt/cni/bin
       - name: install-cni
-        image: blitz:0.1.8
+        image: blitz:0.1.5-19-g7d286e2
         imagePullPolicy: Never
         command:
         - cp
@@ -128,13 +128,16 @@ spec:
           mountPath: /etc/cni/net.d
         - name: blitz-cfg
           mountPath: /etc/kube-blitz/
+        - name: xtables-lock
+          mountPath: /run/xtables.lock
       - name: install-net-cfg
-        image: blitz:0.1.8
+        image: blitz:0.1.5-19-g7d286e2
         imagePullPolicy: Never
         command:
           - /opt/bin/blitzd
         args:
           - --NetworkCfgGen=true
+          - --ip-Masq
           - --ClusterCIDR=10.244.0.0/16
           - --mode=host-gw
         env:
@@ -142,6 +145,10 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: spec.nodeName
+        securityContext:
+          privileged: false
+          capabilities:
+            add: ["NET_ADMIN", "NET_RAW"]
         volumeMounts:
           - name: run
             mountPath: /run/blitz
@@ -149,7 +156,7 @@ spec:
             mountPath: /tmp
       containers:
       - name: kube-blitz
-        image: blitz:0.1.8
+        image: blitz:0.1.5-19-g7d286e2
         imagePullPolicy: Never
         command:
         - /opt/bin/blitzd
@@ -180,6 +187,8 @@ spec:
           mountPath: /etc/kube-blitz/
         - name: tmp
           mountPath: /tmp
+        - name: xtables-lock
+          mountPath: /run/xtables.lock
       volumes:
       - name: run
         hostPath:
@@ -196,3 +205,7 @@ spec:
       - name: blitz-cfg
         configMap:
           name: kube-blitz-cfg
+      - name: xtables-lock
+        hostPath:
+          path: /run/xtables.lock
+          type: FileOrCreate

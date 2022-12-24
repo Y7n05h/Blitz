@@ -7,6 +7,7 @@ import (
 	"blitz/pkg/events"
 	"blitz/pkg/host_gw"
 	"blitz/pkg/ipnet"
+	"blitz/pkg/iptables"
 	"blitz/pkg/log"
 	nodeMetadata "blitz/pkg/node"
 	Reconciler "blitz/pkg/reconciler"
@@ -24,6 +25,7 @@ import (
 type Flags struct {
 	nwCfgGen    bool
 	version     bool
+	ipMasq      bool
 	clusterCIDR string
 	mode        string
 }
@@ -33,6 +35,7 @@ var opts Flags
 func init() {
 	flag.BoolVar(&opts.nwCfgGen, "NetworkCfgGen", false, "Generator Network CniRuntimeCfg")
 	flag.BoolVar(&opts.version, "version", false, "")
+	flag.BoolVar(&opts.ipMasq, "ip-Masq", false, "")
 	flag.StringVar(&opts.clusterCIDR, "ClusterCIDR", "", "")
 	flag.StringVar(&opts.mode, "mode", "vxlan", "Mode of Blitz (vxlan/host-gw)")
 }
@@ -90,6 +93,13 @@ func EnvironmentInit(nodeName string, clientset *kubernetes.Clientset) {
 	_, err = config.CreateStorage(cfg)
 	if err != nil {
 		log.Log.Fatal("CreateStorage Failed")
+	}
+	if opts.ipMasq {
+		iptables.CreateChain("nat", "BLITZ-POSTRTG", iptables.IPv4)
+		err := iptables.ApplyRulesWithCheck(iptables.MasqRules(clusterCIDR, podCIDR, "BLITZ-POSTRTG"), iptables.IPv4)
+		if err != nil {
+			log.Log.Errorf("ApplyRules Failed:%v", err)
+		}
 	}
 	log.Log.Infof("[blitzd]Run Success")
 	os.Exit(0)
