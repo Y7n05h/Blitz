@@ -23,7 +23,7 @@ const (
 type PlugStorage struct {
 	Ipv4Record *ipam.Ipam
 	Mtx        *filemutex.FileMutex `json:"-"`
-	NetworkCfg
+	Ipv4Cfg    *NetworkCfg
 }
 type CniRuntimeCfg struct {
 	types.NetConf
@@ -81,7 +81,7 @@ func CreateStorage(cfg NetworkCfg) (*PlugStorage, error) {
 		log.Log.Debug(err)
 		return nil, err
 	}
-	storage := &PlugStorage{Mtx: mtx, NetworkCfg: cfg, Ipv4Record: ipam.New(&cfg.PodCIDR)}
+	storage := &PlugStorage{Mtx: mtx, Ipv4Cfg: &cfg, Ipv4Record: ipam.New(&cfg.PodCIDR)}
 
 	//无需加锁，此时不存在并发操作
 

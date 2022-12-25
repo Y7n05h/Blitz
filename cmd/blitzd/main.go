@@ -95,7 +95,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	}
 	if opts.ipMasq {
 		iptables.CreateChain("nat", "BLITZ-POSTRTG", iptables.IPv4)
-		err := iptables.ApplyRulesWithCheck(iptables.MasqRules(&storage.ClusterCIDR, &storage.PodCIDR, "BLITZ-POSTRTG"), iptables.IPv4)
+		err := iptables.ApplyRulesWithCheck(iptables.MasqRules(&storage.Ipv4Cfg.ClusterCIDR, &storage.Ipv4Cfg.PodCIDR, "BLITZ-POSTRTG"), iptables.IPv4)
 		if err != nil {
 			log.Log.Errorf("ApplyRules Failed:%v", err)
 		}
@@ -103,7 +103,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	var handle events.EventHandle
 	switch opts.mode {
 	case "vxlan":
-		vxlanDevice, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.PodCIDR.IP, net.CIDRMask(32, 32)))
+		vxlanDevice, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.Ipv4Cfg.PodCIDR.IP, net.CIDRMask(32, 32)))
 		if err != nil {
 			log.Log.Error("SetupVXLAN:", err)
 			return err

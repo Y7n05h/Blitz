@@ -64,7 +64,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	if err := devices.SetupVeth(netns, br, args.IfName, ip, gateway.IP, &storage.ClusterCIDR); err != nil {
+	if err := devices.SetupVeth(netns, br, args.IfName, ip, gateway.IP, &storage.Ipv4Cfg.ClusterCIDR); err != nil {
 		log.Log.Debug("Err:", err)
 		return err
 	}
