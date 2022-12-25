@@ -3,6 +3,7 @@ package ipnet
 import (
 	"encoding/json"
 	"net"
+	"strings"
 
 	"github.com/containernetworking/cni/pkg/types"
 )
@@ -20,7 +21,16 @@ func ParseCIDR(s string) (*IPNet, error) {
 	ipn.IP = ip
 	return FromNetIPNet(ipn), nil
 }
-
+func ParseCIDRs(s string) []*IPNet {
+	cidrStrings := strings.Split(s, ",")
+	result := make([]*IPNet, 0)
+	for _, cidrString := range cidrStrings {
+		if cidr, err := ParseCIDR(cidrString); err == nil && cidr != nil {
+			result = append(result, cidr)
+		}
+	}
+	return result
+}
 func (n IPNet) MarshalJSON() ([]byte, error) {
 	return json.Marshal((*net.IPNet)(&n).String())
 }
@@ -50,6 +60,9 @@ func (n *IPNet) Equal(s *IPNet) bool {
 }
 func (n *IPNet) String() string {
 	return n.ToNetIPNet().String()
+}
+func (n *IPNet) IsIPv4() bool {
+	return n.IP.To4() != nil
 }
 func FromTypesIPNet(ipnet *types.IPNet) *IPNet {
 	return (*IPNet)(ipnet)
