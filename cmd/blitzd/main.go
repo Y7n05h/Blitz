@@ -19,6 +19,8 @@ import (
 	"net"
 	"os"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -64,7 +66,24 @@ func main() {
 		log.Log.Fatal("Run Failed:", err)
 	}
 }
-
+func CreateStorage(node *corev1.Node) (*config.PlugStorage, error) {
+	var IPv4Cfg *config.NetworkCfg
+	var IPv6Cfg *config.NetworkCfg
+	PodCIDRs, err := nodeMetadata.GetPodCIDRs(node)
+	if err != nil {
+		return nil, err
+	}
+	IPv4CIDR, IPv6CIDR := ipnet.SelectIPv4AndIPv6(PodCIDRs)
+	clusterCIDR := ipnet.ParseCIDRs(opts.clusterCIDR)
+	IPv4ClusterCIDR, IPv6ClusterCIDR := ipnet.SelectIPv4AndIPv6(clusterCIDR)
+	if IPv4CIDR != nil && IPv4ClusterCIDR != nil {
+		IPv4Cfg = &config.NetworkCfg{PodCIDR: *IPv4CIDR, ClusterCIDR: *IPv4ClusterCIDR}
+	}
+	if IPv6CIDR != nil && IPv6ClusterCIDR != nil {
+		IPv6Cfg = &config.NetworkCfg{PodCIDR: *IPv6CIDR, ClusterCIDR: *IPv6ClusterCIDR}
+	}
+	return config.CreateStorage(IPv4Cfg, IPv6Cfg)
+}
 func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	node, err := nodeMetadata.GetCurrentNode(clientset, nodeName)
 	if err != nil {
@@ -73,19 +92,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	storage, err := config.LoadStorage()
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			podCIDR, err := nodeMetadata.GetPodCIDR(node)
-			if err != nil {
-			}
-			clusterCIDR, err := ipnet.ParseCIDR(opts.clusterCIDR)
-			if err != nil {
-				log.Log.Fatal("Parse clusterCIDR Error:", err)
-			}
-			log.Log.Debugf("Parse CIDR Success! PodCIDR:%s ClusterCIDR:%s", podCIDR.String(), clusterCIDR.String())
-			cfg := config.NetworkCfg{
-				ClusterCIDR: *clusterCIDR,
-				PodCIDR:     *podCIDR,
-			}
-			storage, err = config.CreateStorage(cfg)
+			storage, err = CreateStorage(node)
 			if err != nil {
 				log.Log.Fatal("CreateStorage Failed")
 			}

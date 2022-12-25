@@ -6,6 +6,7 @@ import (
 	"blitz/pkg/log"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path"
 
@@ -22,8 +23,10 @@ const (
 
 type PlugStorage struct {
 	Ipv4Record *ipam.Ipam
+	Ipv6Record *ipam.Ipam
 	Mtx        *filemutex.FileMutex `json:"-"`
 	Ipv4Cfg    *NetworkCfg
+	Ipv6Cfg    *NetworkCfg
 }
 type CniRuntimeCfg struct {
 	types.NetConf
@@ -57,7 +60,10 @@ func newFileMutex(lockPath string) (*filemutex.FileMutex, error) {
 
 	return mtx, nil
 }
-func CreateStorage(cfg NetworkCfg) (*PlugStorage, error) {
+func CreateStorage(IPv4Cfg, IPv6Cfg *NetworkCfg) (*PlugStorage, error) {
+	if IPv4Cfg == nil && IPv6Cfg == nil {
+		return nil, fmt.Errorf("both IPv4Cfg and IPv6Cfg is nil")
+	}
 	var err error
 	if _, err = os.Stat(StoragePath); errors.Is(err, os.ErrNotExist) {
 		if err = os.MkdirAll(StorageDir, 0750); err != nil {
@@ -81,10 +87,17 @@ func CreateStorage(cfg NetworkCfg) (*PlugStorage, error) {
 		log.Log.Debug(err)
 		return nil, err
 	}
-	storage := &PlugStorage{Mtx: mtx, Ipv4Cfg: &cfg, Ipv4Record: ipam.New(&cfg.PodCIDR)}
+	storage := &PlugStorage{Mtx: mtx}
+	if IPv4Cfg != nil {
+		storage.Ipv4Cfg = IPv4Cfg
+		storage.Ipv4Record = ipam.New(&IPv4Cfg.PodCIDR)
+	}
+	if IPv6Cfg != nil {
+		storage.Ipv6Cfg = IPv6Cfg
+		storage.Ipv6Record = ipam.New(&IPv6Cfg.PodCIDR)
+	}
 
 	//无需加锁，此时不存在并发操作
-
 	ok := storage.store()
 	if !ok {
 		log.Log.Fatal("load failed")
@@ -170,4 +183,10 @@ func (s *PlugStorage) AtomicDo(inner func() error) error {
 	}
 	s.unlock()
 	return err
+}
+func (s *PlugStorage) EnableIPv4() bool {
+	return s.Ipv4Cfg != nil
+}
+func (s *PlugStorage) EnableIPv6() bool {
+	return s.Ipv6Cfg != nil
 }
