@@ -4,6 +4,7 @@ import (
 	"blitz/pkg/ipnet"
 	"blitz/pkg/log"
 	"encoding/json"
+	"fmt"
 	"testing"
 )
 
@@ -15,8 +16,34 @@ func checkIPNetUnderSubnet(t *testing.T, ipNet ipnet.IPNet, subnet ipnet.IPNet) 
 		t.Fatalf("Alloc IP Mask Error")
 	}
 }
-func TestRecord_Alloc(t *testing.T) {
-	subnet, _ := ipnet.ParseCIDR("192.168.1.1/24")
+func TestRecord_Alloc1(t *testing.T) {
+	subnet, _ := ipnet.ParseCIDR("192.168.1.0/29")
+	record := New(subnet)
+	ips := make([]*ipnet.IPNet, 0)
+	for i := 0; i < 5; i++ {
+		ip, err := record.Alloc(fmt.Sprintf("%d", i))
+		if err != nil {
+			t.Errorf("Alloc Error")
+		}
+		ips = append(ips, ip)
+	}
+	if _, err := record.Alloc("8"); err == nil {
+		t.Errorf("Alloc Error")
+	}
+	if err := record.Release("3"); err != nil {
+		t.Errorf("Release Error")
+	}
+	if ip, err := record.Alloc("8"); err != nil {
+		t.Errorf("Alloc Error")
+	} else {
+		if !ip.Equal(ips[3]) {
+			t.Errorf("Alloc after Release Error")
+		}
+	}
+	t.Logf("ips:%v", ips)
+}
+func TestRecord_Alloc2(t *testing.T) {
+	subnet, _ := ipnet.ParseCIDR("192.168.1.0/24")
 	record := New(subnet)
 	id1 := "123123123"
 	id2 := "312312312"
