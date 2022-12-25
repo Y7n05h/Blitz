@@ -83,7 +83,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 			log.Log.Debugf("Parse CIDR Success! PodCIDR:%s ClusterCIDR:%s", podCIDR.String(), clusterCIDR.String())
 			cfg := config.NetworkCfg{
 				ClusterCIDR: *clusterCIDR,
-				NodeCIDR:    *podCIDR,
+				PodCIDR:     *podCIDR,
 			}
 			storage, err = config.CreateStorage(cfg)
 			if err != nil {
@@ -95,7 +95,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	}
 	if opts.ipMasq {
 		iptables.CreateChain("nat", "BLITZ-POSTRTG", iptables.IPv4)
-		err := iptables.ApplyRulesWithCheck(iptables.MasqRules(&storage.ClusterCIDR, &storage.NodeCIDR, "BLITZ-POSTRTG"), iptables.IPv4)
+		err := iptables.ApplyRulesWithCheck(iptables.MasqRules(&storage.ClusterCIDR, &storage.PodCIDR, "BLITZ-POSTRTG"), iptables.IPv4)
 		if err != nil {
 			log.Log.Errorf("ApplyRules Failed:%v", err)
 		}
@@ -103,7 +103,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	var handle events.EventHandle
 	switch opts.mode {
 	case "vxlan":
-		vxlanDevice, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.NodeCIDR.IP, net.CIDRMask(32, 32)))
+		vxlanDevice, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.PodCIDR.IP, net.CIDRMask(32, 32)))
 		if err != nil {
 			log.Log.Error("SetupVXLAN:", err)
 			return err

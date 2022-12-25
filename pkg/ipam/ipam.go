@@ -61,7 +61,7 @@ func (r *Ipam) UnmarshalJSON(data []byte) error {
 	}
 	r.Subnet = &record.Subnet
 	r.Gateway = &record.Gateway
-	log.Log.Debugf("Get NodeCIDR: %s", r.Subnet.String())
+	log.Log.Debugf("Get PodCIDR: %s", r.Subnet.String())
 	if record.AllocRecord != nil {
 		r.AllocRecord = bimap.NewBiMapFromMap[string, string](record.AllocRecord)
 	} else {

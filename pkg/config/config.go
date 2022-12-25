@@ -31,7 +31,7 @@ type CniRuntimeCfg struct {
 type NetworkCfg struct {
 	//All filed in NetworkCfg is Read-only
 	ClusterCIDR ipnet.IPNet
-	NodeCIDR    ipnet.IPNet
+	PodCIDR     ipnet.IPNet
 }
 
 func LoadCfg(data []byte) (*CniRuntimeCfg, error) {
@@ -81,7 +81,7 @@ func CreateStorage(cfg NetworkCfg) (*PlugStorage, error) {
 		log.Log.Debug(err)
 		return nil, err
 	}
-	storage := &PlugStorage{Mtx: mtx, NetworkCfg: cfg, Ipv4Record: ipam.New(&cfg.NodeCIDR)}
+	storage := &PlugStorage{Mtx: mtx, NetworkCfg: cfg, Ipv4Record: ipam.New(&cfg.PodCIDR)}
 
 	//无需加锁，此时不存在并发操作
 
