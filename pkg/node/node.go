@@ -71,6 +71,29 @@ func GetPodCIDR(node *corev1.Node) (*ipnet.IPNet, error) {
 	_, ip, err := net.ParseCIDR(node.Spec.PodCIDR)
 	return ipnet.FromNetIPNet(ip), err
 }
+
+func GetPodCIDRs(node *corev1.Node) ([]*ipnet.IPNet, error) {
+	size := len(node.Spec.PodCIDRs)
+	if size <= 0 {
+		return nil, fmt.Errorf("get %s PodCIDRs Failed:PodCIDRs is empty", node.Name)
+	}
+	if size > 2 {
+		return nil, fmt.Errorf("get %s PodCIDRs Failed:PodCIDRs more than 2", node.Name)
+	}
+	result := make([]*ipnet.IPNet, 0)
+	for _, cidrString := range node.Spec.PodCIDRs {
+		cidr, err := ipnet.ParseCIDR(cidrString)
+		if err != nil {
+			log.Log.Warnf("Parse PodCIDR (%s) Error:%v.Error Ignored.", cidrString, err)
+			continue
+		}
+		result = append(result, cidr)
+	}
+	if len(result) < 1 {
+		return nil, fmt.Errorf("no valid PodCIDR")
+	}
+	return result, nil
+}
 func GetCurrentNode(clientset *kubernetes.Clientset, podName string) (*corev1.Node, error) {
 	node, err := clientset.CoreV1().Nodes().Get(context.TODO(), podName, metav1.GetOptions{})
 	if err != nil {

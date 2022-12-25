@@ -76,3 +76,13 @@ func FromIPAndMask(ip net.IP, mask net.IPMask) *IPNet {
 		Mask: mask,
 	})
 }
+func SelectIPv4AndIPv6(cidrs []*IPNet) (ipv4 *IPNet, ipv6 *IPNet) {
+	for _, cidr := range cidrs {
+		if cidr.IsIPv4() {
+			ipv4 = cidr
+		} else {
+			ipv6 = cidr
+		}
+	}
+	return
+}
