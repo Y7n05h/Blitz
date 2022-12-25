@@ -13,6 +13,7 @@ import (
 	Reconciler "blitz/pkg/reconciler"
 	"blitz/pkg/vxlan"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net"
@@ -23,7 +24,6 @@ import (
 )
 
 type Flags struct {
-	nwCfgGen    bool
 	version     bool
 	ipMasq      bool
 	clusterCIDR string
@@ -33,7 +33,6 @@ type Flags struct {
 var opts Flags
 
 func init() {
-	flag.BoolVar(&opts.nwCfgGen, "NetworkCfgGen", false, "Generator Network CniRuntimeCfg")
 	flag.BoolVar(&opts.version, "version", false, "")
 	flag.BoolVar(&opts.ipMasq, "ip-Masq", false, "")
 	flag.StringVar(&opts.clusterCIDR, "ClusterCIDR", "", "")
@@ -60,58 +59,46 @@ func main() {
 		log.Log.Fatal("Get clientSet Failed", err)
 	}
 	log.Log.Debugf("Get clientset Success")
-	if opts.nwCfgGen {
-		EnvironmentInit(nodeName, clientset)
-	} else {
-		err := Run(nodeName, clientset)
-		if err != nil {
-			log.Log.Fatal("Run Failed:", err)
-		}
+	err = Run(nodeName, clientset)
+	if err != nil {
+		log.Log.Fatal("Run Failed:", err)
 	}
 }
 
-// EnvironmentInit will never return!
-func EnvironmentInit(nodeName string, clientset *kubernetes.Clientset) {
-	currentNode, err := nodeMetadata.GetCurrentNode(clientset, nodeName)
-	if err != nil {
-		log.Log.Fatal("Get Current Node Failed")
-	}
-	log.Log.Debugf("Get current Node Success")
-	podCIDR, err := nodeMetadata.GetPodCIDR(currentNode)
-	if err != nil {
-		log.Log.Fatal("Get Node CIDR Failed")
-	}
-	clusterCIDR, err := ipnet.ParseCIDR(opts.clusterCIDR)
-	if err != nil {
-		log.Log.Fatal("Parse clusterCIDR Error:", err)
-	}
-	log.Log.Debugf("Parse CIDR Success! PodCIDR:%s ClusterCIDR:%s", podCIDR.String(), clusterCIDR.String())
-	cfg := config.NetworkCfg{
-		ClusterCIDR: *clusterCIDR,
-		NodeCIDR:    *podCIDR,
-	}
-	_, err = config.CreateStorage(cfg)
-	if err != nil {
-		log.Log.Fatal("CreateStorage Failed")
-	}
-	if opts.ipMasq {
-		iptables.CreateChain("nat", "BLITZ-POSTRTG", iptables.IPv4)
-		err := iptables.ApplyRulesWithCheck(iptables.MasqRules(clusterCIDR, podCIDR, "BLITZ-POSTRTG"), iptables.IPv4)
-		if err != nil {
-			log.Log.Errorf("ApplyRules Failed:%v", err)
-		}
-	}
-	log.Log.Infof("[blitzd]Run Success")
-	os.Exit(0)
-}
 func Run(nodeName string, clientset *kubernetes.Clientset) error {
-	storage, err := config.LoadStorage()
-	if err != nil {
-		log.Log.Fatal("Load Storage Failed:", err)
-	}
 	node, err := nodeMetadata.GetCurrentNode(clientset, nodeName)
 	if err != nil {
 		return nil
+	}
+	storage, err := config.LoadStorage()
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			podCIDR, err := nodeMetadata.GetPodCIDR(node)
+			if err != nil {
+			}
+			clusterCIDR, err := ipnet.ParseCIDR(opts.clusterCIDR)
+			if err != nil {
+				log.Log.Fatal("Parse clusterCIDR Error:", err)
+			}
+			log.Log.Debugf("Parse CIDR Success! PodCIDR:%s ClusterCIDR:%s", podCIDR.String(), clusterCIDR.String())
+			cfg := config.NetworkCfg{
+				ClusterCIDR: *clusterCIDR,
+				NodeCIDR:    *podCIDR,
+			}
+			storage, err = config.CreateStorage(cfg)
+			if err != nil {
+				log.Log.Fatal("CreateStorage Failed")
+			}
+		} else {
+			log.Log.Fatal("Load Storage Failed:", err)
+		}
+	}
+	if opts.ipMasq {
+		iptables.CreateChain("nat", "BLITZ-POSTRTG", iptables.IPv4)
+		err := iptables.ApplyRulesWithCheck(iptables.MasqRules(&storage.ClusterCIDR, &storage.NodeCIDR, "BLITZ-POSTRTG"), iptables.IPv4)
+		if err != nil {
+			log.Log.Errorf("ApplyRules Failed:%v", err)
+		}
 	}
 	var handle events.EventHandle
 	switch opts.mode {
