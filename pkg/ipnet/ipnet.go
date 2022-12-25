@@ -36,7 +36,7 @@ func (n *IPNet) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	*n = IPNet(*tmp)
+	*n = *tmp
 	return nil
 }
 func (n *IPNet) ToNetIPNet() *net.IPNet {
