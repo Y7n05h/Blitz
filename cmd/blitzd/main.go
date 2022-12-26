@@ -101,10 +101,19 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 		}
 	}
 	if opts.ipMasq {
-		iptables.CreateChain("nat", "BLITZ-POSTRTG", iptables.IPv4)
-		err := iptables.ApplyRulesWithCheck(iptables.MasqRules(&storage.Ipv4Cfg.ClusterCIDR, &storage.Ipv4Cfg.PodCIDR, "BLITZ-POSTRTG", iptables.IPv4), iptables.IPv4)
-		if err != nil {
-			log.Log.Errorf("ApplyRules Failed:%v", err)
+		if storage.EnableIPv4() {
+			iptables.CreateChain("nat", "BLITZ-POSTRTG", iptables.IPv4)
+			err := iptables.ApplyRulesWithCheck(iptables.MasqRules(&storage.Ipv4Cfg.ClusterCIDR, &storage.Ipv4Cfg.PodCIDR, "BLITZ-POSTRTG", iptables.IPv4), iptables.IPv4)
+			if err != nil {
+				log.Log.Errorf("Apply IPv4 Rules Failed:%v", err)
+			}
+		}
+		if storage.EnableIPv6() {
+			iptables.CreateChain("nat", "BLITZ-POSTRTG", iptables.IPv6)
+			err := iptables.ApplyRulesWithCheck(iptables.MasqRules(&storage.Ipv4Cfg.ClusterCIDR, &storage.Ipv4Cfg.PodCIDR, "BLITZ-POSTRTG", iptables.IPv6), iptables.IPv6)
+			if err != nil {
+				log.Log.Errorf("Apply IPv6 Rules Failed:%v", err)
+			}
 		}
 	}
 	var handle events.EventHandle
