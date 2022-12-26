@@ -24,11 +24,12 @@ const (
 
 type Annotations struct {
 	VxlanMacAddr hardware.Address `json:"vxlan,omitempty"`
-	PublicIP     ipnet.IPNet
+	PublicIPv4   *ipnet.IPNet     `json:"PublicIPv4,omitempty"`
+	PublicIPv6   *ipnet.IPNet     `json:"PublicIPv6,omitempty"`
 }
 
 func (a *Annotations) Equal(annotations *Annotations) bool {
-	return a == annotations || (a != nil && annotations != nil && a.VxlanMacAddr.Equal(&annotations.VxlanMacAddr) && a.PublicIP.Equal(&annotations.PublicIP))
+	return a == annotations || (a != nil && annotations != nil && a.VxlanMacAddr.Equal(&annotations.VxlanMacAddr) && a.PublicIPv4.Equal(annotations.PublicIPv4) && a.PublicIPv6.Equal(annotations.PublicIPv6))
 }
 func AddAnnotationsForNode(clientset *kubernetes.Clientset, annotations *Annotations, node *corev1.Node) error {
 	data, err := json.Marshal(annotations)

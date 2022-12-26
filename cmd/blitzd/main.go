@@ -147,7 +147,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 		if err != nil {
 			return err
 		}
-		annotations := nodeMetadata.Annotations{PublicIP: *hostIP}
+		annotations := nodeMetadata.Annotations{PublicIPv4: hostIP}
 		err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, node)
 		if err != nil {
 			return err

@@ -47,7 +47,7 @@ func (v *Handle) AddHandle(event *events.Event) {
 	}
 	//添加 Fdb表中条目
 	log.Log.Debugf("[reconciler]DEBUG Node:%s annotations:%v %#v", event.Name, event.Attr, event.Attr)
-	err = devices.AddFDB(ifIdx, event.Attr.PublicIP.IP, event.Attr.VxlanMacAddr)
+	err = devices.AddFDB(ifIdx, event.Attr.PublicIPv4.IP, event.Attr.VxlanMacAddr)
 	if err != nil {
 		log.Log.Error("Add Fdb Failed: ", err)
 	}
@@ -72,7 +72,7 @@ func (v *Handle) DelHandle(event *events.Event) {
 		}
 	}
 	//删除 Fdb表中条目
-	err := devices.DelFDB(v.Vxlan.Attrs().Index, event.Attr.PublicIP.IP, event.Attr.VxlanMacAddr)
+	err := devices.DelFDB(v.Vxlan.Attrs().Index, event.Attr.PublicIPv4.IP, event.Attr.VxlanMacAddr)
 	if err != nil {
 		log.Log.Error("Del ARP Failed: ", err)
 	}
@@ -93,7 +93,7 @@ func AddVxlanInfo(clientset *kubernetes.Clientset, n *corev1.Node) error {
 	if err != nil {
 		return err
 	}
-	annotations := nodeMetadata.Annotations{VxlanMacAddr: *hardwareAddr, PublicIP: *PublicIP}
+	annotations := nodeMetadata.Annotations{VxlanMacAddr: *hardwareAddr, PublicIPv4: PublicIP}
 	err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, n)
 	if err != nil {
 		return err
