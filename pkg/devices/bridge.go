@@ -89,7 +89,10 @@ addAddr:
 	}
 	for _, subnet := range gateway {
 		if err := netlink.AddrAdd(dev, &netlink.Addr{IPNet: subnet.ToNetIPNet()}); err != nil {
-			log.Log.Error("Add Addr Failed.")
+			if err == syscall.EEXIST {
+				continue
+			}
+			log.Log.Errorf("Add Addr Failed.Err:%v,%#v", err, err)
 			return nil, err
 		}
 	}
