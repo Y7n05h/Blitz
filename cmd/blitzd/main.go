@@ -102,7 +102,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	}
 	if opts.ipMasq {
 		iptables.CreateChain("nat", "BLITZ-POSTRTG", iptables.IPv4)
-		err := iptables.ApplyRulesWithCheck(iptables.MasqRules(&storage.Ipv4Cfg.ClusterCIDR, &storage.Ipv4Cfg.PodCIDR, "BLITZ-POSTRTG"), iptables.IPv4)
+		err := iptables.ApplyRulesWithCheck(iptables.MasqRules(&storage.Ipv4Cfg.ClusterCIDR, &storage.Ipv4Cfg.PodCIDR, "BLITZ-POSTRTG", iptables.IPv4), iptables.IPv4)
 		if err != nil {
 			log.Log.Errorf("ApplyRules Failed:%v", err)
 		}
