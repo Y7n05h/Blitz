@@ -136,23 +136,39 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 			Vxlan:    vxlanDevice,
 		}
 	case "host-gw":
-		//TODO: ADD IPv6 Support
-		defaultLink, err := devices.GetDefaultGateway(devices.IPv4)
-		if err != nil {
-			log.Log.Debug("No valid route")
-			return err
+		annotations := nodeMetadata.Annotations{}
+		hostGwHandle := host_gw.Handle{NodeName: nodeName}
+		if storage.EnableIPv4() {
+			defaultLink, err := devices.GetDefaultGateway(devices.IPv4)
+			if err != nil {
+				log.Log.Debug("No valid route")
+				return err
+			}
+			hostGwHandle.IPv4Link = *defaultLink
+			hostIP, err := devices.GetHostIP(devices.IPv4)
+			if err != nil {
+				return err
+			}
+			annotations.PublicIPv4 = hostIP
 		}
-		//TODO: ADD IPv6 Support
-		hostIP, err := devices.GetHostIP(devices.IPv4)
-		if err != nil {
-			return err
+		if storage.EnableIPv6() {
+			defaultLink, err := devices.GetDefaultGateway(devices.IPv6)
+			if err != nil {
+				log.Log.Debug("No valid route")
+				return err
+			}
+			hostGwHandle.IPv6Link = *defaultLink
+			hostIP, err := devices.GetHostIP(devices.IPv6)
+			if err != nil {
+				return err
+			}
+			annotations.PublicIPv6 = hostIP
 		}
-		annotations := nodeMetadata.Annotations{PublicIPv4: hostIP}
 		err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, node)
 		if err != nil {
 			return err
 		}
-		handle = &host_gw.Handle{NodeName: nodeName, Link: *defaultLink}
+		handle = &hostGwHandle
 	default:
 		log.Log.Fatal("Invalid mode.")
 	}
