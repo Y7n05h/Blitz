@@ -95,8 +95,8 @@ func GetPodCIDRs(node *corev1.Node) ([]*ipnet.IPNet, error) {
 	}
 	return result, nil
 }
-func GetCurrentNode(clientset *kubernetes.Clientset, podName string) (*corev1.Node, error) {
-	node, err := clientset.CoreV1().Nodes().Get(context.TODO(), podName, metav1.GetOptions{})
+func GetCurrentNode(clientset *kubernetes.Clientset, nodeName string) (*corev1.Node, error) {
+	node, err := clientset.CoreV1().Nodes().Get(context.TODO(), nodeName, metav1.GetOptions{})
 	if err != nil {
 		log.Log.Error("Get Node Info Failed:", err)
 		return nil, err
