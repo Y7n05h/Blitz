@@ -7,8 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -64,13 +62,6 @@ func GetAnnotations(node *corev1.Node) *Annotations {
 		return nil
 	}
 	return &annotations
-}
-func GetPodCIDR(node *corev1.Node) (*ipnet.IPNet, error) {
-	if len(node.Spec.PodCIDR) == 0 {
-		return nil, fmt.Errorf("get %s PodCIDR Failed", node.Name)
-	}
-	_, ip, err := net.ParseCIDR(node.Spec.PodCIDR)
-	return ipnet.FromNetIPNet(ip), err
 }
 
 func GetPodCIDRs(node *corev1.Node) ([]*ipnet.IPNet, error) {

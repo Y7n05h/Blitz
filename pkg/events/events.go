@@ -33,19 +33,21 @@ func FromNode(n *corev1.Node, eventType EventType) *Event {
 	if annotations == nil {
 		return nil
 	}
-	cidr, err := nodeMetadata.GetPodCIDR(n)
+	cidrs, err := nodeMetadata.GetPodCIDRs(n)
 	log.Log.Debugf("[reconciler]Node:%s annotations:%v %#v", n.Name, annotations, annotations)
 	if err != nil {
 		log.Log.Warn("Get Cidr From Node Failed", err)
 		return nil
 	}
+	ipv4CIDR, ipv6CIDR := ipnet.SelectIPv4AndIPv6(cidrs)
 	return &Event{
 		Type:        eventType,
 		Name:        n.Name,
-		IPv4PodCIDR: cidr,
+		IPv4PodCIDR: ipv4CIDR,
+		IPv6PodCIDR: ipv6CIDR,
 		Attr:        *annotations,
 	}
 }
 func (e *Event) Equal(event *Event) bool {
-	return (e == event) || (e != nil && event != nil && e.Type == event.Type && e.Name == event.Name && e.IPv4PodCIDR.Equal(event.IPv4PodCIDR) && e.Attr.Equal(&event.Attr))
+	return (e == event) || (e != nil && event != nil && e.Type == event.Type && e.Name == event.Name && e.IPv4PodCIDR.Equal(event.IPv4PodCIDR) && e.IPv6PodCIDR.Equal(event.IPv6PodCIDR) && e.Attr.Equal(&event.Attr))
 }
