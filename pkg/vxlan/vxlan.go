@@ -31,8 +31,8 @@ func (v *Handle) AddHandle(event *events.Event) {
 	route := netlink.Route{
 		LinkIndex: ifIdx,
 		Scope:     netlink.SCOPE_UNIVERSE,
-		Dst:       event.PodCIDR.ToNetIPNet(),
-		Gw:        event.PodCIDR.IP,
+		Dst:       event.IPv4PodCIDR.ToNetIPNet(),
+		Gw:        event.IPv4PodCIDR.IP,
 		Flags:     syscall.RTNH_F_ONLINK,
 	}
 	err := netlink.RouteAdd(&route)
@@ -41,7 +41,7 @@ func (v *Handle) AddHandle(event *events.Event) {
 		return
 	}
 	// 添加 Arp 表中条目
-	err = devices.AddARP(ifIdx, event.PodCIDR.IP, event.Attr.VxlanMacAddr)
+	err = devices.AddARP(ifIdx, event.IPv4PodCIDR.IP, event.Attr.VxlanMacAddr)
 	if err != nil {
 		log.Log.Error("Add ARP Failed: ", err)
 	}
@@ -56,7 +56,7 @@ func (v *Handle) DelHandle(event *events.Event) {
 	if event.Name == v.NodeName {
 		return
 	}
-	route := devices.GetRouteByDist(v.Vxlan.Attrs().Index, event.PodCIDR)
+	route := devices.GetRouteByDist(v.Vxlan.Attrs().Index, *event.IPv4PodCIDR)
 	if route != nil {
 		err := netlink.RouteDel(route)
 		if err != nil {
@@ -64,7 +64,7 @@ func (v *Handle) DelHandle(event *events.Event) {
 		}
 	}
 	// 删除Arp表中条目
-	neigh := devices.GetNeighByIP(v.Vxlan.Attrs().Index, event.PodCIDR.IP)
+	neigh := devices.GetNeighByIP(v.Vxlan.Attrs().Index, event.IPv4PodCIDR.IP)
 	if neigh != nil {
 		err := netlink.NeighDel(neigh)
 		if err != nil {

@@ -21,7 +21,7 @@ func (h *Handle) AddHandle(event *events.Event) {
 	route := netlink.Route{
 		LinkIndex: h.Link.Attrs().Index,
 		Scope:     netlink.SCOPE_UNIVERSE,
-		Dst:       event.PodCIDR.ToNetIPNet(),
+		Dst:       event.IPv4PodCIDR.ToNetIPNet(),
 		Gw:        event.Attr.PublicIPv4.IP,
 	}
 	err := netlink.RouteAdd(&route)
@@ -37,7 +37,7 @@ func (h *Handle) DelHandle(event *events.Event) {
 	route := netlink.Route{
 		LinkIndex: h.Link.Attrs().Index,
 		Scope:     netlink.SCOPE_UNIVERSE,
-		Dst:       event.PodCIDR.ToNetIPNet(),
+		Dst:       event.IPv4PodCIDR.ToNetIPNet(),
 		Gw:        event.Attr.PublicIPv4.IP,
 	}
 	err := netlink.RouteDel(&route)

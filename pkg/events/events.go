@@ -17,10 +17,11 @@ const (
 )
 
 type Event struct {
-	Type    EventType
-	Name    string
-	PodCIDR ipnet.IPNet
-	Attr    nodeMetadata.Annotations
+	Type        EventType
+	Name        string
+	IPv4PodCIDR *ipnet.IPNet
+	IPv6PodCIDR *ipnet.IPNet
+	Attr        nodeMetadata.Annotations
 }
 type EventHandle interface {
 	AddHandle(event *Event)
@@ -39,12 +40,12 @@ func FromNode(n *corev1.Node, eventType EventType) *Event {
 		return nil
 	}
 	return &Event{
-		Type:    eventType,
-		Name:    n.Name,
-		PodCIDR: *cidr,
-		Attr:    *annotations,
+		Type:        eventType,
+		Name:        n.Name,
+		IPv4PodCIDR: cidr,
+		Attr:        *annotations,
 	}
 }
 func (e *Event) Equal(event *Event) bool {
-	return (e == event) || (e != nil && event != nil && e.Type == event.Type && e.Name == event.Name && e.PodCIDR.Equal(&event.PodCIDR) && e.Attr.Equal(&event.Attr))
+	return (e == event) || (e != nil && event != nil && e.Type == event.Type && e.Name == event.Name && e.IPv4PodCIDR.Equal(event.IPv4PodCIDR) && e.Attr.Equal(&event.Attr))
 }
