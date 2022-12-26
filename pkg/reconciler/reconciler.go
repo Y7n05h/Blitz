@@ -95,8 +95,10 @@ func (r *Reconciler) Run(ctx context.Context) {
 		case event := <-r.event:
 			switch event.Type {
 			case events.Add:
+				log.Log.Debugf("Event Add")
 				r.eventHandle.AddHandle(event)
 			case events.Del:
+				log.Log.Debugf("Event Del")
 				r.eventHandle.DelHandle(event)
 			}
 		}

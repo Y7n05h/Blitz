@@ -73,7 +73,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 	br, err := devices.GetBridge(gateway)
 	if err != nil {
-		log.Log.Debugf("Err:%#v", err)
+		log.Log.Debugf("Err:%v", err)
 		return err
 	}
 	if br == nil {

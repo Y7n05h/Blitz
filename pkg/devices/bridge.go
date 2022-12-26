@@ -75,22 +75,27 @@ newBr:
 			TxQLen: -1,
 		},
 	}
-addAddr:
+	log.Log.Debug("No Bridge Exist.Try to create one.")
 	if err := netlink.LinkAdd(br); err != nil && err != syscall.EEXIST {
+		log.Log.Error("Try to create bridge Failed.")
 		return nil, err
 	}
 
+addAddr:
 	dev, err := netlink.LinkByName(constant.BridgeName)
 	if err != nil {
+		log.Log.Error("Get Bridge Failed")
 		return nil, err
 	}
 	for _, subnet := range gateway {
 		if err := netlink.AddrAdd(dev, &netlink.Addr{IPNet: subnet.ToNetIPNet()}); err != nil {
+			log.Log.Error("Add Addr Failed.")
 			return nil, err
 		}
 	}
 
 	if err := netlink.LinkSetUp(dev); err != nil {
+		log.Log.Error("Set Link Up failed")
 		return nil, err
 	}
 	return dev, nil
@@ -119,6 +124,7 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, info []NetworkInf
 		// create the veth pair in the container and move host end into host netns
 		host, container, err := ip.SetupVeth(ifName, constant.Mtu, "", hostNS)
 		if err != nil {
+			log.Log.Errorf("Setup Veth Error:%v %#v", err, err)
 			return err
 		}
 		hostIdx = host.Index
@@ -126,29 +132,34 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, info []NetworkInf
 		// set ip for container veth
 		conLink, err := netlink.LinkByIndex(container.Index)
 		if err != nil {
+			log.Log.Errorf("Link By Index Error:%v %#v", err, err)
 			return err
 		}
 		for _, i := range info {
+			log.Log.Debugf("Setup Container Veth: PodIP: %s Gateway:%s ClusterCIDR:%s", i.PodIP.String(), i.Gateway.String(), i.ClusterCIDR.String())
 			if err := netlink.AddrAdd(conLink, &netlink.Addr{IPNet: i.PodIP.ToNetIPNet()}); err != nil {
+				log.Log.Errorf("Add Addr For Veth Error:%v %#v", err, err)
 				return err
 			}
 			// add default route
 			if err := ip.AddDefaultRoute(i.Gateway.IP, conLink); err != nil {
+				log.Log.Errorf("Add Default Route Error:%v %#v", err, err)
 				return err
 			}
-			if err != nil {
-				return err
-			}
-			err = ip.AddRoute(i.ClusterCIDR.ToNetIPNet(), i.Gateway.IP, conLink)
-			if err != nil {
+			if err := ip.AddRoute(i.ClusterCIDR.ToNetIPNet(), i.Gateway.IP, conLink); err != nil {
+				log.Log.Errorf("Add Route for veth Error:%v %#v", err, err)
 				return err
 			}
 		}
 		// setup container veth
-		return netlink.LinkSetUp(conLink)
+		if err = netlink.LinkSetUp(conLink); err != nil {
+			log.Log.Errorf("Link Set Up Error:%v %#v", err, err)
+			return nil
+		}
+		return nil
 	})
 	if err != nil {
-		log.Log.Fatal("Error:%v %#v", err, err)
+		log.Log.Fatalf("Error:%v %#v", err, err)
 		return err
 	}
 	log.Log.Debugf("Create Veth Success")
