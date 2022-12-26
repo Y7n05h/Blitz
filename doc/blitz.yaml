@@ -139,7 +139,7 @@ spec:
         args:
         # get cluster cidr from kube-controller-manager
         - --ip-Masq
-        - --ClusterCIDR=10.244.0.0/16
+        - --ClusterCIDR=10.244.0.0/16,2001:db8:42:0::/56
         - --mode=host-gw
         resources:
           requests:
