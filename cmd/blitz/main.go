@@ -35,11 +35,31 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 	log.Log.Debug("[Success]LoadStorage")
-	var ip *ipnet.IPNet
+	info := make([]devices.NetworkInfo, 0)
 	err = storage.AtomicDo(func() error {
-		var err error
-		ip, err = storage.Ipv4Record.Alloc(args.ContainerID)
-		return err
+		if storage.EnableIPv4() {
+			ip, err := storage.Ipv4Record.Alloc(args.ContainerID)
+			if err != nil {
+				return err
+			}
+			info = append(info, devices.NetworkInfo{
+				PodIP:       *ip,
+				Gateway:     *storage.Ipv4Record.GetGateway(),
+				ClusterCIDR: storage.Ipv4Cfg.ClusterCIDR,
+			})
+		}
+		if storage.EnableIPv6() {
+			ip, err := storage.Ipv6Record.Alloc(args.ContainerID)
+			if err != nil {
+				return err
+			}
+			info = append(info, devices.NetworkInfo{
+				PodIP:       *ip,
+				Gateway:     *storage.Ipv6Record.GetGateway(),
+				ClusterCIDR: storage.Ipv6Cfg.ClusterCIDR,
+			})
+		}
+		return nil
 	})
 	log.Log.Debug("[Done]Alloc IP")
 	if err != nil {
@@ -47,7 +67,10 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 	log.Log.Debug("[Success]Alloc IP")
-	gateway := storage.Ipv4Record.GetGateway()
+	gateway := make([]*ipnet.IPNet, 0)
+	for _, i := range info {
+		gateway = append(gateway, &i.Gateway)
+	}
 	br, err := devices.GetBridge(gateway)
 	if err != nil {
 		log.Log.Debugf("Err:%#v", err)
@@ -63,19 +86,19 @@ func cmdAdd(args *skel.CmdArgs) error {
 		log.Log.Debug("Err:", err)
 		return err
 	}
-
-	if err := devices.SetupVeth(netns, br, args.IfName, ip, gateway.IP, &storage.Ipv4Cfg.ClusterCIDR); err != nil {
+	if err := devices.SetupVeth(netns, br, args.IfName, info); err != nil {
 		log.Log.Debug("Err:", err)
 		return err
 	}
 
 	result := types100.Result{
-		IPs: []*types100.IPConfig{
-			{
-				Address: *ip.ToNetIPNet(),
-				Gateway: gateway.IP,
-			},
-		},
+		IPs: make([]*types100.IPConfig, 0),
+	}
+	for _, i := range info {
+		result.IPs = append(result.IPs, &types100.IPConfig{
+			Address: *i.PodIP.ToNetIPNet(),
+			Gateway: i.Gateway.IP,
+		})
 	}
 	log.Log.Debug("Success")
 	return types.PrintResult(&result, cfg.CNIVersion)
@@ -106,7 +129,19 @@ func cmdDel(args *skel.CmdArgs) error {
 	}
 	log.Log.Debug("Done Release IP")
 	err = storage.AtomicDo(func() error {
-		return storage.Ipv4Record.Release(args.ContainerID)
+		if storage.EnableIPv4() {
+			err := storage.Ipv4Record.Release(args.ContainerID)
+			if err != nil {
+				return err
+			}
+		}
+		if storage.EnableIPv6() {
+			err := storage.Ipv6Record.Release(args.ContainerID)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		return err
@@ -123,13 +158,30 @@ func cmdCheck(args *skel.CmdArgs) error {
 		return err
 	}
 	log.Log.Debug("Load Storage Success")
-	ipNet, ok := storage.Ipv4Record.GetIPByID(args.ContainerID)
-	if !ok {
-		//TODO
-		log.Log.Debug("Get IP by ID failed")
-		//return fmt.Errorf("can not found IP")
+	ips := make([]*ipnet.IPNet, 0)
+	err = storage.AtomicDo(func() error {
+		if storage.EnableIPv4() {
+			ipNet, ok := storage.Ipv4Record.GetIPByID(args.ContainerID)
+			if !ok {
+				//TODO
+				log.Log.Debug("Get IP by ID failed")
+				//return fmt.Errorf("can not found IP")
+				return nil
+			}
+			ips = append(ips, ipNet)
+		}
+		if storage.EnableIPv6() {
+			ipNet, ok := storage.Ipv6Record.GetIPByID(args.ContainerID)
+			if !ok {
+				//TODO
+				log.Log.Debug("Get IP by ID failed")
+				//return fmt.Errorf("can not found IP")
+				return nil
+			}
+			ips = append(ips, ipNet)
+		}
 		return nil
-	}
+	})
 	log.Log.Debug("Get NS")
 	netns, err := ns.GetNS(args.Netns)
 	if err != nil {
@@ -140,8 +192,8 @@ func cmdCheck(args *skel.CmdArgs) error {
 		if err != nil {
 			return err
 		}
-		if !devices.CheckLinkContainIPNNet(ipNet, veth) {
-			return fmt.Errorf("%s does not have %s", veth.Attrs().Name, ipNet.String())
+		if !devices.CheckLinkContainIPNNet(ips, veth) {
+			return fmt.Errorf("%s does not have %v", veth.Attrs().Name, ips)
 		}
 		return nil
 	})

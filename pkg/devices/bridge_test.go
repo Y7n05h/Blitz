@@ -11,7 +11,7 @@ func TestGetBridge(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	br, err := GetBridge(cidr)
+	br, err := GetBridge([]*ipnet.IPNet{cidr})
 	if err != nil {
 		t.Fatal(err)
 	}

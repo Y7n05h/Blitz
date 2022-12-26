@@ -22,31 +22,31 @@ const (
 	IPv6 = netlink.FAMILY_V6
 )
 
-func CheckLinkContainIPNNet(gateway *ipnet.IPNet, br netlink.Link) bool {
-	ipFamily := 0
-	if gateway.IsIPv4() {
-		ipFamily = IPv4
-	} else {
-		ipFamily = IPv6
-	}
-	address, err := netlink.AddrList(br, ipFamily)
+func CheckLinkContainIPNNet(gateway []*ipnet.IPNet, br netlink.Link) bool {
+	address, err := netlink.AddrList(br, netlink.FAMILY_ALL)
 	if err != nil {
+		log.Log.Debugf("Get Link Address Failed:%v", err)
 		return false
 	}
-	for _, v := range address {
-		if gateway.Equal(ipnet.FromNetIPNet(v.IPNet)) {
-			return true
+	cidrs := make(map[string]bool)
+	for _, cidr := range address {
+		cidrs[cidr.String()] = true
+	}
+	for _, v := range gateway {
+		_, ok := cidrs[v.String()]
+		if !ok {
+			return false
 		}
 	}
-	return false
+	return true
 }
-func GetBridge(gateway *ipnet.IPNet) (netlink.Link, error) {
+func GetBridge(gateway []*ipnet.IPNet) (netlink.Link, error) {
 	var linkErr netlink.LinkNotFoundError
 	if br, err := netlink.LinkByName(constant.BridgeName); err == nil {
 		if br != nil && CheckLinkContainIPNNet(gateway, br) {
 			return br, nil
 		}
-		log.Log.Fatal("Not Expect Link: gateway not same: expect ip:%s", gateway.String())
+		log.Log.Fatalf("Not Expect Link: gateway not same: expect ip:%v", gateway)
 	} else if !errors.As(err, &linkErr) {
 		log.Log.Warnf("Not Expect Link Error:%v", err)
 		return nil, err
@@ -84,9 +84,10 @@ addAddr:
 	if err != nil {
 		return nil, err
 	}
-
-	if err := netlink.AddrAdd(dev, &netlink.Addr{IPNet: gateway.ToNetIPNet()}); err != nil {
-		return nil, err
+	for _, subnet := range gateway {
+		if err := netlink.AddrAdd(dev, &netlink.Addr{IPNet: subnet.ToNetIPNet()}); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := netlink.LinkSetUp(dev); err != nil {
@@ -94,7 +95,14 @@ addAddr:
 	}
 	return dev, nil
 }
-func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *ipnet.IPNet, gateway net.IP, clusterCIDR *ipnet.IPNet) error {
+
+type NetworkInfo struct {
+	PodIP       ipnet.IPNet
+	Gateway     ipnet.IPNet
+	ClusterCIDR ipnet.IPNet
+}
+
+func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, info []NetworkInfo) error {
 	hostIdx := -1
 	err := netns.Do(func(hostNS ns.NetNS) error {
 		// setup lo, kubernetes will call loopback internal
@@ -120,24 +128,24 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, podIP *ipnet.IPNe
 		if err != nil {
 			return err
 		}
-		if err := netlink.AddrAdd(conLink, &netlink.Addr{IPNet: podIP.ToNetIPNet()}); err != nil {
-			return err
+		for _, i := range info {
+			if err := netlink.AddrAdd(conLink, &netlink.Addr{IPNet: i.PodIP.ToNetIPNet()}); err != nil {
+				return err
+			}
+			// add default route
+			if err := ip.AddDefaultRoute(i.Gateway.IP, conLink); err != nil {
+				return err
+			}
+			if err != nil {
+				return err
+			}
+			err = ip.AddRoute(i.ClusterCIDR.ToNetIPNet(), i.Gateway.IP, conLink)
+			if err != nil {
+				return err
+			}
 		}
-
 		// setup container veth
-		if err := netlink.LinkSetUp(conLink); err != nil {
-			return err
-		}
-
-		// add default route
-		if err := ip.AddDefaultRoute(gateway, conLink); err != nil {
-			return err
-		}
-		if err != nil {
-			return err
-		}
-		err = ip.AddRoute(clusterCIDR.ToNetIPNet(), gateway, conLink)
-		return nil
+		return netlink.LinkSetUp(conLink)
 	})
 	if err != nil {
 		log.Log.Fatal("Error:%v %#v", err, err)
@@ -192,7 +200,7 @@ func LinkByIP(ip *ipnet.IPNet) (netlink.Link, error) {
 		if link == nil {
 			continue
 		}
-		if CheckLinkContainIPNNet(ip, link) {
+		if CheckLinkContainIPNNet([]*ipnet.IPNet{ip}, link) {
 			return link, err
 		}
 	}
