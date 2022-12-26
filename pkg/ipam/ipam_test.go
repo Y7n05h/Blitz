@@ -69,6 +69,59 @@ func TestRecord_Alloc2(t *testing.T) {
 	data, _ := json.Marshal(record)
 	log.Log.Debugf("[json]%s", data)
 }
+func TestRecord_Alloc3(t *testing.T) {
+	subnet, _ := ipnet.ParseCIDR("fe80::/64")
+	record := New(subnet)
+	id1 := "123123123"
+	id2 := "312312312"
+	ip1, err := record.Alloc(id1)
+	if err != nil {
+		t.Fatalf("Alloc Failed")
+	}
+	checkIPNetUnderSubnet(t, *ip1, *subnet)
+	ip2, err := record.Alloc(id1)
+	if err != nil {
+		t.Fatalf("Alloc Failed")
+	}
+	if !ip1.Equal(ip2) {
+		t.Fatalf("Ip not Equal: ip1 %s ip2 %s", ip1.String(), ip2.String())
+	}
+	ip3, err := record.Alloc(id2)
+	if err != nil {
+		t.Fatalf("Alloc Failed")
+	}
+	if ip1.Equal(ip3) {
+		t.Fatalf("Ip Equal")
+	}
+	data, _ := json.Marshal(record)
+	log.Log.Debugf("[json]%s", data)
+}
+func TestRecord_Alloc4(t *testing.T) {
+	subnet, _ := ipnet.ParseCIDR("fe80::/125")
+	record := New(subnet)
+	ips := make([]*ipnet.IPNet, 0)
+	for i := 0; i < 5; i++ {
+		ip, err := record.Alloc(fmt.Sprintf("%d", i))
+		if err != nil {
+			t.Errorf("Alloc Error")
+		}
+		ips = append(ips, ip)
+	}
+	if _, err := record.Alloc("8"); err == nil {
+		t.Errorf("Alloc Error")
+	}
+	if err := record.Release("3"); err != nil {
+		t.Errorf("Release Error")
+	}
+	if ip, err := record.Alloc("8"); err != nil {
+		t.Errorf("Alloc Error")
+	} else {
+		if !ip.Equal(ips[3]) {
+			t.Errorf("Alloc after Release Error")
+		}
+	}
+	t.Logf("ips:%v", ips)
+}
 func TestRecord_Release(t *testing.T) {
 }
 func TestRecord_UnmarshalJSON(t *testing.T) {
