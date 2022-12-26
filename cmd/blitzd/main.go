@@ -110,7 +110,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 		}
 		if storage.EnableIPv6() {
 			iptables.CreateChain("nat", "BLITZ-POSTRTG", iptables.IPv6)
-			err := iptables.ApplyRulesWithCheck(iptables.MasqRules(&storage.Ipv4Cfg.ClusterCIDR, &storage.Ipv4Cfg.PodCIDR, "BLITZ-POSTRTG", iptables.IPv6), iptables.IPv6)
+			err := iptables.ApplyRulesWithCheck(iptables.MasqRules(&storage.Ipv6Cfg.ClusterCIDR, &storage.Ipv6Cfg.PodCIDR, "BLITZ-POSTRTG", iptables.IPv6), iptables.IPv6)
 			if err != nil {
 				log.Log.Errorf("Apply IPv6 Rules Failed:%v", err)
 			}
