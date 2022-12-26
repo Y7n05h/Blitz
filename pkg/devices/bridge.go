@@ -17,12 +17,17 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
+const (
+	IPv4 = netlink.FAMILY_V4
+	IPv6 = netlink.FAMILY_V6
+)
+
 func CheckLinkContainIPNNet(gateway *ipnet.IPNet, br netlink.Link) bool {
 	ipFamily := 0
-	if gateway.IP.To4() != nil {
-		ipFamily = netlink.FAMILY_V4
+	if gateway.IsIPv4() {
+		ipFamily = IPv4
 	} else {
-		ipFamily = netlink.FAMILY_V6
+		ipFamily = IPv6
 	}
 	address, err := netlink.AddrList(br, ipFamily)
 	if err != nil {
@@ -193,9 +198,8 @@ func LinkByIP(ip *ipnet.IPNet) (netlink.Link, error) {
 	}
 	return nil, fmt.Errorf("can not found ip")
 }
-func GetDefaultGateway() (*netlink.Link, error) {
-	//	TODO: Support IPv6
-	routes, err := netlink.RouteList(nil, netlink.FAMILY_V4)
+func GetDefaultGateway(family int) (*netlink.Link, error) {
+	routes, err := netlink.RouteList(nil, family)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +225,8 @@ func SetupVXLAN(subnet *ipnet.IPNet) (*netlink.Vxlan, error) {
 		log.Log.Error("No Expect Error: ", err)
 		return nil, err
 	}
-	gatewayLink, err := GetDefaultGateway()
+	//TODO: ADD IPv6 Support
+	gatewayLink, err := GetDefaultGateway(IPv4)
 	if err != nil {
 		return nil, err
 	}
@@ -269,13 +274,12 @@ func createVXLAN(ifIdx int) (*netlink.Vxlan, error) {
 	}
 	return vxlan.(*netlink.Vxlan), nil
 }
-func GetHostIP() (*ipnet.IPNet, error) {
-	link, err := GetDefaultGateway()
+func GetHostIP(family int) (*ipnet.IPNet, error) {
+	link, err := GetDefaultGateway(family)
 	if err != nil {
 		return nil, err
 	}
-	//	TODO: Support IPv6
-	address, err := netlink.AddrList(*link, netlink.FAMILY_V4)
+	address, err := netlink.AddrList(*link, family)
 	if err != nil {
 		return nil, err
 	}

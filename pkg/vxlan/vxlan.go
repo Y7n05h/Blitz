@@ -88,7 +88,8 @@ func AddVxlanInfo(clientset *kubernetes.Clientset, n *corev1.Node) error {
 	if oldAnnotations != nil && oldAnnotations.VxlanMacAddr.Equal(hardwareAddr) {
 		return nil
 	}
-	PublicIP, err := devices.GetHostIP()
+	//TODO: ADD IPv6 Support
+	PublicIP, err := devices.GetHostIP(devices.IPv4)
 	if err != nil {
 		return err
 	}

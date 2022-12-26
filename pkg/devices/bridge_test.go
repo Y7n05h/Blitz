@@ -20,7 +20,8 @@ func TestGetBridge(t *testing.T) {
 	}
 }
 func TestGetHostIP(t *testing.T) {
-	subnet, err := GetHostIP()
+	//TODO: ADD IPv6 Support
+	subnet, err := GetHostIP(IPv4)
 	if err != nil {
 		t.Fatal()
 	}

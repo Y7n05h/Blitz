@@ -136,12 +136,14 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 			Vxlan:    vxlanDevice,
 		}
 	case "host-gw":
-		defaultLink, err := devices.GetDefaultGateway()
+		//TODO: ADD IPv6 Support
+		defaultLink, err := devices.GetDefaultGateway(devices.IPv4)
 		if err != nil {
 			log.Log.Debug("No valid route")
 			return err
 		}
-		hostIP, err := devices.GetHostIP()
+		//TODO: ADD IPv6 Support
+		hostIP, err := devices.GetHostIP(devices.IPv4)
 		if err != nil {
 			return err
 		}
