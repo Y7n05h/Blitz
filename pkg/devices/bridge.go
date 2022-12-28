@@ -41,6 +41,7 @@ func CheckLinkContainIPNet(gateway []*ipnet.IPNet, br netlink.Link) bool {
 	return true
 }
 func GetBridge(gateway []*ipnet.IPNet) (netlink.Link, error) {
+	log.Log.Debugf("GetBridge: gateway:%s", gateway)
 	var linkErr netlink.LinkNotFoundError
 	if br, err := netlink.LinkByName(constant.BridgeName); err == nil {
 		if br != nil && CheckLinkContainIPNet(gateway, br) {
@@ -90,6 +91,7 @@ addAddr:
 	for _, subnet := range gateway {
 		if err := netlink.AddrAdd(dev, &netlink.Addr{IPNet: subnet.ToNetIPNet()}); err != nil {
 			if err == syscall.EEXIST {
+				log.Log.Debugf("Addr exist:%s", subnet.String())
 				continue
 			}
 			log.Log.Errorf("Add Addr Failed.Err:%v,%#v", err, err)

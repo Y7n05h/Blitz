@@ -61,14 +61,14 @@ func cmdAdd(args *skel.CmdArgs) error {
 		}
 		return nil
 	})
-	log.Log.Debug("[Done]Alloc IP")
 	if err != nil {
 		log.Log.Debug("Err:", err)
 		return err
 	}
-	log.Log.Debug("[Success]Alloc IP")
+	log.Log.Debugf("storage:%v\ninfo:%v", storage, info)
 	gateway := make([]*ipnet.IPNet, 0)
 	for _, i := range info {
+		log.Log.Debugf("NetworkInfo:%v", i)
 		gateway = append(gateway, &i.Gateway)
 	}
 	br, err := devices.GetBridge(gateway)
