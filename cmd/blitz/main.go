@@ -192,7 +192,7 @@ func cmdCheck(args *skel.CmdArgs) error {
 		if err != nil {
 			return err
 		}
-		if !devices.CheckLinkContainIPNNet(ips, veth) {
+		if !devices.CheckLinkContainIPNet(ips, veth) {
 			return fmt.Errorf("%s does not have %v", veth.Attrs().Name, ips)
 		}
 		return nil

@@ -22,7 +22,7 @@ const (
 	IPv6 = netlink.FAMILY_V6
 )
 
-func CheckLinkContainIPNNet(gateway []*ipnet.IPNet, br netlink.Link) bool {
+func CheckLinkContainIPNet(gateway []*ipnet.IPNet, br netlink.Link) bool {
 	address, err := netlink.AddrList(br, netlink.FAMILY_ALL)
 	if err != nil {
 		log.Log.Debugf("Get Link Address Failed:%v", err)
@@ -43,7 +43,7 @@ func CheckLinkContainIPNNet(gateway []*ipnet.IPNet, br netlink.Link) bool {
 func GetBridge(gateway []*ipnet.IPNet) (netlink.Link, error) {
 	var linkErr netlink.LinkNotFoundError
 	if br, err := netlink.LinkByName(constant.BridgeName); err == nil {
-		if br != nil && CheckLinkContainIPNNet(gateway, br) {
+		if br != nil && CheckLinkContainIPNet(gateway, br) {
 			return br, nil
 		}
 		log.Log.Fatalf("Not Expect Link: gateway not same: expect ip:%v", gateway)
@@ -62,7 +62,7 @@ func GetBridge(gateway []*ipnet.IPNet) (netlink.Link, error) {
 			log.Log.Error("Not Expect Link: gateway not same")
 			goto newBr
 		}
-		if CheckLinkContainIPNNet(gateway, br) {
+		if CheckLinkContainIPNet(gateway, br) {
 			return br, nil
 		}
 		goto addAddr
@@ -214,7 +214,7 @@ func LinkByIP(ip *ipnet.IPNet) (netlink.Link, error) {
 		if link == nil {
 			continue
 		}
-		if CheckLinkContainIPNNet([]*ipnet.IPNet{ip}, link) {
+		if CheckLinkContainIPNet([]*ipnet.IPNet{ip}, link) {
 			return link, err
 		}
 	}
