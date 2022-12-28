@@ -137,7 +137,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 			if macAddr == nil {
 				return fmt.Errorf("get Mac Addr Error")
 			}
-			annotations.IPv6VxlanMacAddr = macAddr
+			annotations.IPv4VxlanMacAddr = macAddr
 		}
 		if storage.EnableIPv6() {
 			vxlanHandle.Ipv6Vxlan, err = devices.SetupVXLAN(ipnet.FromIPAndMask(storage.Ipv6Cfg.PodCIDR.IP, net.CIDRMask(128, 128)), constant.VXLANName+"v6")
