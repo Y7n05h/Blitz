@@ -247,8 +247,7 @@ func SetupVXLAN(subnet *ipnet.IPNet) (*netlink.Vxlan, error) {
 		log.Log.Error("No Expect Error: ", err)
 		return nil, err
 	}
-	//TODO: ADD IPv6 Support
-	gatewayLink, err := GetDefaultGateway(IPv4)
+	gatewayLink, err := GetDefaultGateway(familyFromIPNet(subnet))
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +314,7 @@ func GetRouteByDist(idx int, subnet ipnet.IPNet) *netlink.Route {
 		LinkIndex: idx,
 		Dst:       subnet.ToNetIPNet(),
 	}
-	res, err := netlink.RouteListFiltered(netlink.FAMILY_V4, &route, netlink.RT_FILTER_DST|netlink.RT_FILTER_OIF)
+	res, err := netlink.RouteListFiltered(familyFromIPNet(&subnet), &route, netlink.RT_FILTER_DST|netlink.RT_FILTER_OIF)
 	if err != nil {
 		log.Log.Debugf("Can not get route idx:%d subnet:%s", idx, subnet.String())
 		return nil
@@ -330,7 +329,7 @@ func GetRouteByDist(idx int, subnet ipnet.IPNet) *netlink.Route {
 	return &res[0]
 }
 func GetNeighByIP(idx int, ip net.IP) *netlink.Neigh {
-	neighs, err := netlink.NeighList(idx, netlink.FAMILY_V4)
+	neighs, err := netlink.NeighList(idx, familyFromIP(ip))
 	if err != nil {
 		log.Log.Error("Get Neigh Failed:", err)
 		return nil
@@ -398,4 +397,16 @@ func AddDefaultRoute(gw net.IP, dev netlink.Link) error {
 	//IPv6
 	_, defNet, _ := net.ParseCIDR("::/0")
 	return ip.AddRoute(defNet, gw, dev)
+}
+func familyFromIPNet(subnet *ipnet.IPNet) int {
+	if subnet.IsIPv4() {
+		return IPv4
+	}
+	return IPv6
+}
+func familyFromIP(ip net.IP) int {
+	if ip.To4() != nil {
+		return IPv4
+	}
+	return IPv6
 }
