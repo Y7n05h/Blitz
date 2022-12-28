@@ -37,6 +37,10 @@ func (a *Annotations) Equal(annotations *Annotations) bool {
 			a.PublicIPv6.Equal(annotations.PublicIPv6))
 }
 func AddAnnotationsForNode(clientset *kubernetes.Clientset, annotations *Annotations, node *corev1.Node) error {
+	oldAnnotations := GetAnnotations(node)
+	if annotations.Equal(oldAnnotations) {
+		return nil
+	}
 	data, err := json.Marshal(annotations)
 	if err != nil {
 		return err
