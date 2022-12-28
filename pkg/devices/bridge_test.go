@@ -11,7 +11,7 @@ func TestGetBridge(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	br, err := GetBridge([]*ipnet.IPNet{cidr})
+	br, err := GetBridge([]ipnet.IPNet{*cidr})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,7 +25,7 @@ func TestGetHostIP(t *testing.T) {
 	if err != nil {
 		t.Fatal()
 	}
-	links, err := LinkByIP(subnet)
+	links, err := LinkByIP(*subnet)
 	if err != nil {
 		t.Logf("err:%s", err)
 	}

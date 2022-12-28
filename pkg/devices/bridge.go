@@ -22,7 +22,7 @@ const (
 	IPv6 = netlink.FAMILY_V6
 )
 
-func CheckLinkContainIPNet(gateway []*ipnet.IPNet, br netlink.Link) bool {
+func CheckLinkContainIPNet(gateway []ipnet.IPNet, br netlink.Link) bool {
 	address, err := netlink.AddrList(br, netlink.FAMILY_ALL)
 	if err != nil {
 		log.Log.Debugf("Get Link Address Failed:%v", err)
@@ -40,7 +40,7 @@ func CheckLinkContainIPNet(gateway []*ipnet.IPNet, br netlink.Link) bool {
 	}
 	return true
 }
-func GetBridge(gateway []*ipnet.IPNet) (netlink.Link, error) {
+func GetBridge(gateway []ipnet.IPNet) (netlink.Link, error) {
 	log.Log.Debugf("GetBridge: gateway:%s", gateway)
 	var linkErr netlink.LinkNotFoundError
 	if br, err := netlink.LinkByName(constant.BridgeName); err == nil {
@@ -207,7 +207,7 @@ func DelVeth(netns ns.NetNS, ifName string) error {
 		return nil
 	})
 }
-func LinkByIP(ip *ipnet.IPNet) (netlink.Link, error) {
+func LinkByIP(ip ipnet.IPNet) (netlink.Link, error) {
 	links, err := netlink.LinkList()
 	if err != nil {
 		return nil, err
@@ -216,7 +216,7 @@ func LinkByIP(ip *ipnet.IPNet) (netlink.Link, error) {
 		if link == nil {
 			continue
 		}
-		if CheckLinkContainIPNet([]*ipnet.IPNet{ip}, link) {
+		if CheckLinkContainIPNet([]ipnet.IPNet{ip}, link) {
 			return link, err
 		}
 	}

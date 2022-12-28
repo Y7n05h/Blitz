@@ -66,10 +66,10 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 	log.Log.Debugf("storage:%v\ninfo:%v", storage, info)
-	gateway := make([]*ipnet.IPNet, 0)
+	gateway := make([]ipnet.IPNet, 0)
 	for _, i := range info {
 		log.Log.Debugf("NetworkInfo:%v", i)
-		gateway = append(gateway, &i.Gateway)
+		gateway = append(gateway, i.Gateway)
 	}
 	br, err := devices.GetBridge(gateway)
 	if err != nil {
@@ -158,7 +158,7 @@ func cmdCheck(args *skel.CmdArgs) error {
 		return err
 	}
 	log.Log.Debug("Load Storage Success")
-	ips := make([]*ipnet.IPNet, 0)
+	ips := make([]ipnet.IPNet, 0)
 	err = storage.AtomicDo(func() error {
 		if storage.EnableIPv4() {
 			ipNet, ok := storage.Ipv4Record.GetIPByID(args.ContainerID)
@@ -168,7 +168,7 @@ func cmdCheck(args *skel.CmdArgs) error {
 				//return fmt.Errorf("can not found IP")
 				return nil
 			}
-			ips = append(ips, ipNet)
+			ips = append(ips, *ipNet)
 		}
 		if storage.EnableIPv6() {
 			ipNet, ok := storage.Ipv6Record.GetIPByID(args.ContainerID)
@@ -178,7 +178,7 @@ func cmdCheck(args *skel.CmdArgs) error {
 				//return fmt.Errorf("can not found IP")
 				return nil
 			}
-			ips = append(ips, ipNet)
+			ips = append(ips, *ipNet)
 		}
 		return nil
 	})
