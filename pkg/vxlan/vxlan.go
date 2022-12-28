@@ -1,17 +1,12 @@
 package vxlan
 
 import (
-	"blitz/pkg/constant"
 	"blitz/pkg/devices"
 	"blitz/pkg/events"
 	"blitz/pkg/hardware"
 	"blitz/pkg/ipnet"
 	"blitz/pkg/log"
-	nodeMetadata "blitz/pkg/node"
 	"syscall"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/vishvananda/netlink"
 )
@@ -109,27 +104,4 @@ func (v *Handle) DelHandle(event *events.Event) {
 		}
 		delHandle(v.Ipv6Vxlan.Attrs().Index, event.IPv6PodCIDR, event.Attr.PublicIPv6, event.Attr.IPv6VxlanMacAddr)
 	}
-}
-
-func AddVxlanInfo(clientset *kubernetes.Clientset, n *corev1.Node) error {
-	link, err := netlink.LinkByName(constant.VXLANName)
-	if err != nil {
-		return err
-	}
-	hardwareAddr := hardware.FromNetHardware(&link.Attrs().HardwareAddr)
-	oldAnnotations := nodeMetadata.GetAnnotations(n)
-	if oldAnnotations != nil && oldAnnotations.IPv4VxlanMacAddr.Equal(hardwareAddr) {
-		return nil
-	}
-	//TODO: ADD IPv6 Support
-	PublicIP, err := devices.GetHostIP(devices.IPv4)
-	if err != nil {
-		return err
-	}
-	annotations := nodeMetadata.Annotations{IPv4VxlanMacAddr: *hardwareAddr, PublicIPv4: PublicIP}
-	err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, n)
-	if err != nil {
-		return err
-	}
-	return nil
 }
