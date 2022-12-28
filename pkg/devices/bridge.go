@@ -237,8 +237,8 @@ func GetDefaultGateway(family int) (*netlink.Link, error) {
 	}
 	return nil, fmt.Errorf("get Default Gateway failed")
 }
-func SetupVXLAN(subnet *ipnet.IPNet) (*netlink.Vxlan, error) {
-	link, err := netlink.LinkByName(constant.VXLANName)
+func SetupVXLAN(subnet *ipnet.IPNet, name string) (*netlink.Vxlan, error) {
+	link, err := netlink.LinkByName(name)
 	var linkErr netlink.LinkNotFoundError
 	if err == nil {
 		log.Log.Debugf("Found VXLAN exist")
@@ -252,22 +252,22 @@ func SetupVXLAN(subnet *ipnet.IPNet) (*netlink.Vxlan, error) {
 		return nil, err
 	}
 	log.Log.Debugf("Get Default Gateway Success")
-	vxlan, err := createVXLAN((*gatewayLink).Attrs().Index)
+	vxlan, err := createVXLAN((*gatewayLink).Attrs().Index, name)
 	if err != nil {
 		log.Log.Error("createVXLAN Failed:", err)
 	}
 	err = netlink.AddrAdd(vxlan, &netlink.Addr{IPNet: subnet.ToNetIPNet()})
 	return vxlan, err
 }
-func createVXLAN(ifIdx int) (*netlink.Vxlan, error) {
+func createVXLAN(ifIdx int, name string) (*netlink.Vxlan, error) {
 	var linkErr netlink.LinkNotFoundError
-	exist, err := netlink.LinkByName(constant.VXLANName)
+	exist, err := netlink.LinkByName(name)
 	if errors.As(err, &linkErr) && exist != nil {
 		log.Log.Infof("VXLAN exist")
 		return exist.(*netlink.Vxlan), nil
 	}
 	attrs := netlink.NewLinkAttrs()
-	attrs.Name = constant.VXLANName
+	attrs.Name = name
 	addr := hardware.GenHardwareAddr()
 	attrs.HardwareAddr = addr.ToNetHardwareAddr()
 	vtep := netlink.Vxlan{

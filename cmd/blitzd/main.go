@@ -119,7 +119,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	var handle events.EventHandle
 	switch opts.mode {
 	case "vxlan":
-		vxlanDevice, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.Ipv4Cfg.PodCIDR.IP, net.CIDRMask(32, 32)))
+		vxlanDevice, err := devices.SetupVXLAN(ipnet.FromIPAndMask(storage.Ipv4Cfg.PodCIDR.IP, net.CIDRMask(32, 32)), constant.VXLANName)
 		if err != nil {
 			log.Log.Error("SetupVXLAN:", err)
 			return err
