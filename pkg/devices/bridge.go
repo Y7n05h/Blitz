@@ -138,6 +138,11 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, info []NetworkInf
 			log.Log.Errorf("Link By Index Error:%v %#v", err, err)
 			return err
 		}
+		// setup container veth
+		if err = netlink.LinkSetUp(conLink); err != nil {
+			log.Log.Errorf("Link Set Up Error:%v %#v", err, err)
+			return nil
+		}
 		for _, i := range info {
 			log.Log.Debugf("Setup Container Veth: PodIP: %s Gateway:%s ClusterCIDR:%s", i.PodIP.String(), i.Gateway.String(), i.ClusterCIDR.String())
 			if err := netlink.AddrAdd(conLink, &netlink.Addr{IPNet: i.PodIP.ToNetIPNet()}); err != nil {
@@ -153,11 +158,6 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, info []NetworkInf
 				log.Log.Errorf("Add Route for veth Error:%v %#v", err, err)
 				return err
 			}
-		}
-		// setup container veth
-		if err = netlink.LinkSetUp(conLink); err != nil {
-			log.Log.Errorf("Link Set Up Error:%v %#v", err, err)
-			return nil
 		}
 		return nil
 	})
