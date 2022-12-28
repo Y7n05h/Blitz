@@ -18,15 +18,16 @@ import (
 var _ events.EventHandle = (*Handle)(nil)
 
 type Handle struct {
-	NodeName string
-	Vxlan    netlink.Link
+	NodeName  string
+	Ipv4Vxlan netlink.Link
+	Ipv6Vxlan netlink.Link
 }
 
 func (v *Handle) AddHandle(event *events.Event) {
 	if event.Name == v.NodeName {
 		return
 	}
-	ifIdx := v.Vxlan.Attrs().Index
+	ifIdx := v.Ipv4Vxlan.Attrs().Index
 	//添加路由表中
 	route := netlink.Route{
 		LinkIndex: ifIdx,
@@ -41,13 +42,13 @@ func (v *Handle) AddHandle(event *events.Event) {
 		return
 	}
 	// 添加 Arp 表中条目
-	err = devices.AddARP(ifIdx, event.IPv4PodCIDR.IP, event.Attr.VxlanMacAddr)
+	err = devices.AddARP(ifIdx, event.IPv4PodCIDR.IP, event.Attr.IPv4VxlanMacAddr)
 	if err != nil {
 		log.Log.Error("Add ARP Failed: ", err)
 	}
 	//添加 Fdb表中条目
 	log.Log.Debugf("[reconciler]DEBUG Node:%s annotations:%v %#v", event.Name, event.Attr, event.Attr)
-	err = devices.AddFDB(ifIdx, event.Attr.PublicIPv4.IP, event.Attr.VxlanMacAddr)
+	err = devices.AddFDB(ifIdx, event.Attr.PublicIPv4.IP, event.Attr.IPv4VxlanMacAddr)
 	if err != nil {
 		log.Log.Error("Add Fdb Failed: ", err)
 	}
@@ -56,7 +57,7 @@ func (v *Handle) DelHandle(event *events.Event) {
 	if event.Name == v.NodeName {
 		return
 	}
-	route := devices.GetRouteByDist(v.Vxlan.Attrs().Index, *event.IPv4PodCIDR)
+	route := devices.GetRouteByDist(v.Ipv4Vxlan.Attrs().Index, *event.IPv4PodCIDR)
 	if route != nil {
 		err := netlink.RouteDel(route)
 		if err != nil {
@@ -64,7 +65,7 @@ func (v *Handle) DelHandle(event *events.Event) {
 		}
 	}
 	// 删除Arp表中条目
-	neigh := devices.GetNeighByIP(v.Vxlan.Attrs().Index, event.IPv4PodCIDR.IP)
+	neigh := devices.GetNeighByIP(v.Ipv4Vxlan.Attrs().Index, event.IPv4PodCIDR.IP)
 	if neigh != nil {
 		err := netlink.NeighDel(neigh)
 		if err != nil {
@@ -72,7 +73,7 @@ func (v *Handle) DelHandle(event *events.Event) {
 		}
 	}
 	//删除 Fdb表中条目
-	err := devices.DelFDB(v.Vxlan.Attrs().Index, event.Attr.PublicIPv4.IP, event.Attr.VxlanMacAddr)
+	err := devices.DelFDB(v.Ipv4Vxlan.Attrs().Index, event.Attr.PublicIPv4.IP, event.Attr.IPv4VxlanMacAddr)
 	if err != nil {
 		log.Log.Error("Del ARP Failed: ", err)
 	}
@@ -85,7 +86,7 @@ func AddVxlanInfo(clientset *kubernetes.Clientset, n *corev1.Node) error {
 	}
 	hardwareAddr := hardware.FromNetHardware(&link.Attrs().HardwareAddr)
 	oldAnnotations := nodeMetadata.GetAnnotations(n)
-	if oldAnnotations != nil && oldAnnotations.VxlanMacAddr.Equal(hardwareAddr) {
+	if oldAnnotations != nil && oldAnnotations.IPv4VxlanMacAddr.Equal(hardwareAddr) {
 		return nil
 	}
 	//TODO: ADD IPv6 Support
@@ -93,7 +94,7 @@ func AddVxlanInfo(clientset *kubernetes.Clientset, n *corev1.Node) error {
 	if err != nil {
 		return err
 	}
-	annotations := nodeMetadata.Annotations{VxlanMacAddr: *hardwareAddr, PublicIPv4: PublicIP}
+	annotations := nodeMetadata.Annotations{IPv4VxlanMacAddr: *hardwareAddr, PublicIPv4: PublicIP}
 	err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, n)
 	if err != nil {
 		return err

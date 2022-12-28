@@ -132,8 +132,8 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 		}
 		log.Log.Debug("AddVXLAN Info Success")
 		handle = &vxlan.Handle{
-			NodeName: nodeName,
-			Vxlan:    vxlanDevice,
+			NodeName:  nodeName,
+			Ipv4Vxlan: vxlanDevice,
 		}
 	case "host-gw":
 		annotations := nodeMetadata.Annotations{}

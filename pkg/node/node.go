@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -21,13 +22,19 @@ const (
 )
 
 type Annotations struct {
-	VxlanMacAddr hardware.Address `json:"vxlan,omitempty"`
-	PublicIPv4   *ipnet.IPNet     `json:"PublicIPv4,omitempty"`
-	PublicIPv6   *ipnet.IPNet     `json:"PublicIPv6,omitempty"`
+	IPv4VxlanMacAddr hardware.Address `json:"IPv4VxlanMac,omitempty"`
+	IPv6VxlanMacAddr hardware.Address `json:"IPv6VxlanMac,omitempty"`
+	PublicIPv4       *ipnet.IPNet     `json:"PublicIPv4,omitempty"`
+	PublicIPv6       *ipnet.IPNet     `json:"PublicIPv6,omitempty"`
 }
 
 func (a *Annotations) Equal(annotations *Annotations) bool {
-	return a == annotations || (a != nil && annotations != nil && a.VxlanMacAddr.Equal(&annotations.VxlanMacAddr) && a.PublicIPv4.Equal(annotations.PublicIPv4) && a.PublicIPv6.Equal(annotations.PublicIPv6))
+	return a == annotations ||
+		(a != nil && annotations != nil &&
+			a.IPv4VxlanMacAddr.Equal(&annotations.IPv4VxlanMacAddr) &&
+			a.IPv6VxlanMacAddr.Equal(&annotations.IPv6VxlanMacAddr) &&
+			a.PublicIPv4.Equal(annotations.PublicIPv4) &&
+			a.PublicIPv6.Equal(annotations.PublicIPv6))
 }
 func AddAnnotationsForNode(clientset *kubernetes.Clientset, annotations *Annotations, node *corev1.Node) error {
 	data, err := json.Marshal(annotations)
