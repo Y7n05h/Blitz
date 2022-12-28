@@ -220,7 +220,7 @@ func LinkByIP(ip *ipnet.IPNet) (netlink.Link, error) {
 	}
 	return nil, fmt.Errorf("can not found ip")
 }
-func GetDefaultGateway(family int) (*netlink.Link, error) {
+func GetDefaultGateway(family int) (netlink.Link, error) {
 	routes, err := netlink.RouteList(nil, family)
 	if err != nil {
 		return nil, err
@@ -232,7 +232,7 @@ func GetDefaultGateway(family int) (*netlink.Link, error) {
 				log.Log.Warn("LinkByIndex:", err)
 				continue
 			}
-			return &link, nil
+			return link, nil
 		}
 	}
 	return nil, fmt.Errorf("get Default Gateway failed")
@@ -252,7 +252,7 @@ func SetupVXLAN(subnet *ipnet.IPNet, name string) (*netlink.Vxlan, error) {
 		return nil, err
 	}
 	log.Log.Debugf("Get Default Gateway Success")
-	vxlan, err := createVXLAN((*gatewayLink).Attrs().Index, name)
+	vxlan, err := createVXLAN((gatewayLink).Attrs().Index, name)
 	if err != nil {
 		log.Log.Error("createVXLAN Failed:", err)
 	}
@@ -300,7 +300,7 @@ func GetHostIP(family int) (*ipnet.IPNet, error) {
 	if err != nil {
 		return nil, err
 	}
-	address, err := netlink.AddrList(*link, family)
+	address, err := netlink.AddrList(link, family)
 	if err != nil {
 		return nil, err
 	}

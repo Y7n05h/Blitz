@@ -129,10 +129,6 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 				return err
 			}
 			log.Log.Debug("SetupVXLAN for IPv4 Success")
-			annotations.PublicIPv4, err = devices.GetHostIP(devices.IPv4)
-			if err != nil {
-				return err
-			}
 			macAddr := *hardware.FromNetHardware(&vxlanHandle.Ipv4Vxlan.Attrs().HardwareAddr)
 			if macAddr == nil {
 				return fmt.Errorf("get Mac Addr Error")
@@ -171,7 +167,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 				log.Log.Debug("No valid route")
 				return err
 			}
-			hostGwHandle.IPv4Link = *defaultLink
+			hostGwHandle.IPv4Link = defaultLink
 			hostIP, err := devices.GetHostIP(devices.IPv4)
 			if err != nil {
 				return err
@@ -184,7 +180,7 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 				log.Log.Debug("No valid route")
 				return err
 			}
-			hostGwHandle.IPv6Link = *defaultLink
+			hostGwHandle.IPv6Link = defaultLink
 			hostIP, err := devices.GetHostIP(devices.IPv6)
 			if err != nil {
 				return err
