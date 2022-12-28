@@ -129,6 +129,10 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 				return err
 			}
 			log.Log.Debug("SetupVXLAN for IPv4 Success")
+			annotations.PublicIPv4, err = devices.GetHostIP(devices.IPv4)
+			if err != nil {
+				return err
+			}
 			macAddr := *hardware.FromNetHardware(&vxlanHandle.Ipv4Vxlan.Attrs().HardwareAddr)
 			if macAddr == nil {
 				return fmt.Errorf("get Mac Addr Error")
