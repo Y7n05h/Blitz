@@ -29,8 +29,8 @@ func CheckLinkContainIPNNet(gateway []*ipnet.IPNet, br netlink.Link) bool {
 		return false
 	}
 	cidrs := make(map[string]bool)
-	for _, cidr := range address {
-		cidrs[cidr.String()] = true
+	for _, addr := range address {
+		cidrs[addr.IPNet.String()] = true
 	}
 	for _, v := range gateway {
 		_, ok := cidrs[v.String()]
