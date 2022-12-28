@@ -150,7 +150,7 @@ func SetupVeth(netns ns.NetNS, br netlink.Link, ifName string, info []NetworkInf
 				return err
 			}
 			// add default route
-			if err := ip.AddDefaultRoute(i.Gateway.IP, conLink); err != nil {
+			if err := AddDefaultRoute(i.Gateway.IP, conLink); err != nil {
 				log.Log.Errorf("Add Default Route Error:%v %#v", err, err)
 				return err
 			}
@@ -386,4 +386,16 @@ func DelARP(ifIdx int, ip net.IP, address hardware.Address) error {
 		IP:           ip,
 		HardwareAddr: address.ToNetHardwareAddr(),
 	})
+}
+
+// AddDefaultRoute sets the default route on the given gateway.
+func AddDefaultRoute(gw net.IP, dev netlink.Link) error {
+	if gw.To4() != nil {
+		//IPv4
+		_, defNet, _ := net.ParseCIDR("0.0.0.0/0")
+		return ip.AddRoute(defNet, gw, dev)
+	}
+	//IPv6
+	_, defNet, _ := net.ParseCIDR("::/0")
+	return ip.AddRoute(defNet, gw, dev)
 }
