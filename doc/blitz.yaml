@@ -60,13 +60,6 @@ data:
       "type": "blitz",
       "dataDir": "/var/lib/cni/networks"
     }
-  net-conf.json: |
-    {
-      "Network": "10.244.0.0/16",
-      "Backend": {
-        "Type": "vxlan"
-      }
-    }
 ---
 apiVersion: apps/v1
 kind: DaemonSet
