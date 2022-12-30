@@ -20,6 +20,8 @@ import (
 	"net"
 	"os"
 
+	"github.com/containernetworking/plugins/pkg/utils/sysctl"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/client-go/kubernetes"
@@ -85,12 +87,27 @@ func CreateStorage(node *corev1.Node) (*config.PlugStorage, error) {
 	}
 	return config.CreateStorage(IPv4Cfg, IPv6Cfg)
 }
+func checkForwardEnable(key string) (bool, error) {
+	value, err := sysctl.Sysctl(key)
+	return value == "1", err
+}
+
 func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	node, err := nodeMetadata.GetCurrentNode(clientset, nodeName)
 	if err != nil {
 		return nil
 	}
 	storage, err := config.LoadStorage()
+	if storage.EnableIPv4() {
+		if enable, _ := checkForwardEnable("net.ipv4.conf.all.forwarding"); !enable {
+			log.Log.Fatal("IPv4 forward is not enabled!")
+		}
+	}
+	if storage.EnableIPv6() {
+		if enable, _ := checkForwardEnable("net.ipv6.conf.all.forwarding"); !enable {
+			log.Log.Fatal("IPv6 forward is not enabled!")
+		}
+	}
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			storage, err = CreateStorage(node)
