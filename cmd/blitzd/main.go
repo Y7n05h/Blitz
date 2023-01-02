@@ -123,16 +123,16 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 		annotations := nodeMetadata.Annotations{}
 		vxlanHandle := vxlan.Handle{NodeName: nodeName}
 		if storage.EnableIPv4() {
-			vxlanHandle.Ipv4Vxlan, err = devices.SetupVXLAN(ipnet.FromIPAndMask(storage.Ipv4Cfg.PodCIDR.IP, net.CIDRMask(32, 32)), constant.VXLANName)
+			annotations.PublicIPv4, err = devices.GetHostIP(devices.IPv4)
+			if err != nil {
+				return err
+			}
+			vxlanHandle.Ipv4Vxlan, err = devices.SetupVXLAN(ipnet.FromIPAndMask(storage.Ipv4Cfg.PodCIDR.IP, net.CIDRMask(32, 32)), annotations.PublicIPv4.IP, constant.VXLANName)
 			if err != nil {
 				log.Log.Error("SetupVXLAN:", err)
 				return err
 			}
 			log.Log.Debug("SetupVXLAN for IPv4 Success")
-			annotations.PublicIPv4, err = devices.GetHostIP(devices.IPv4)
-			if err != nil {
-				return err
-			}
 			macAddr := *hardware.FromNetHardware(&vxlanHandle.Ipv4Vxlan.Attrs().HardwareAddr)
 			if macAddr == nil {
 				return fmt.Errorf("get Mac Addr Error")
@@ -140,16 +140,16 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 			annotations.IPv4VxlanMacAddr = macAddr
 		}
 		if storage.EnableIPv6() {
-			vxlanHandle.Ipv6Vxlan, err = devices.SetupVXLAN(ipnet.FromIPAndMask(storage.Ipv6Cfg.PodCIDR.IP, net.CIDRMask(128, 128)), constant.VXLANName+"v6")
+			annotations.PublicIPv6, err = devices.GetHostIP(devices.IPv6)
+			if err != nil {
+				return err
+			}
+			vxlanHandle.Ipv6Vxlan, err = devices.SetupVXLAN(ipnet.FromIPAndMask(storage.Ipv6Cfg.PodCIDR.IP, net.CIDRMask(128, 128)), annotations.PublicIPv6.IP, constant.VXLANName+"v6")
 			if err != nil {
 				log.Log.Error("SetupVXLAN:", err)
 				return err
 			}
 			log.Log.Debug("SetupVXLAN for IPv6 Success")
-			annotations.PublicIPv6, err = devices.GetHostIP(devices.IPv6)
-			if err != nil {
-				return err
-			}
 			macAddr := *hardware.FromNetHardware(&vxlanHandle.Ipv6Vxlan.Attrs().HardwareAddr)
 			if macAddr == nil {
 				return fmt.Errorf("get Mac Addr Error")

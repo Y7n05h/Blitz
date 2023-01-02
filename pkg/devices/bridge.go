@@ -239,7 +239,7 @@ func GetDefaultGateway(family int) (netlink.Link, error) {
 	}
 	return nil, fmt.Errorf("get Default Gateway failed")
 }
-func SetupVXLAN(subnet *ipnet.IPNet, name string) (*netlink.Vxlan, error) {
+func SetupVXLAN(subnet *ipnet.IPNet, hostIP net.IP, name string) (*netlink.Vxlan, error) {
 	link, err := netlink.LinkByName(name)
 	var linkErr netlink.LinkNotFoundError
 	if err == nil {
@@ -254,34 +254,38 @@ func SetupVXLAN(subnet *ipnet.IPNet, name string) (*netlink.Vxlan, error) {
 		return nil, err
 	}
 	log.Log.Debugf("Get Default Gateway Success")
-	vxlan, err := createVXLAN((gatewayLink).Attrs().Index, name)
+	vxlan, err := createVXLAN(gatewayLink.Attrs().Index, hostIP, name)
 	if err != nil {
 		log.Log.Error("createVXLAN Failed:", err)
 	}
 	err = netlink.AddrAdd(vxlan, &netlink.Addr{IPNet: subnet.ToNetIPNet()})
 	return vxlan, err
 }
-func createVXLAN(ifIdx int, name string) (*netlink.Vxlan, error) {
-	var linkErr netlink.LinkNotFoundError
-	exist, err := netlink.LinkByName(name)
-	if errors.As(err, &linkErr) && exist != nil {
-		log.Log.Infof("VXLAN exist")
-		return exist.(*netlink.Vxlan), nil
-	}
+func createVXLAN(ifIdx int, hostIP net.IP, name string) (*netlink.Vxlan, error) {
 	attrs := netlink.NewLinkAttrs()
 	attrs.Name = name
 	addr := hardware.GenHardwareAddr()
 	attrs.HardwareAddr = addr.ToNetHardwareAddr()
 	vtep := netlink.Vxlan{
 		LinkAttrs:    attrs,
+		SrcAddr:      hostIP,
 		VxlanId:      constant.VxlanId,
 		VtepDevIndex: ifIdx,
 		Learning:     false,
 		Port:         constant.VXLANPort,
 	}
 	log.Log.Debugf("VXLAN: mac addr:%s", vtep.Attrs().HardwareAddr.String())
-	err = netlink.LinkAdd(&vtep)
+	err := netlink.LinkAdd(&vtep)
 	if err != nil {
+		if err == syscall.EEXIST {
+			log.Log.Warnf("Create VXLAN devices failed:device exist:%v", err)
+			exist, err := netlink.LinkByName(name)
+			if err != nil {
+				log.Log.Errorf("Get exist device failed:%v", err)
+				return nil, err
+			}
+			return exist.(*netlink.Vxlan), nil
+		}
 		log.Log.Warnf("Error %v: Create VXLAN failed: %#v", err, vtep)
 		return nil, err
 	}
