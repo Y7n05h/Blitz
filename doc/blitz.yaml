@@ -96,7 +96,7 @@ spec:
       serviceAccountName: blitz
       initContainers:
       - name: install-cni-plugin
-        image: blitz:0.1.5-19-g7d286e2
+        image: blitz:0.1.8
         imagePullPolicy: Never
         command:
         - cp
@@ -108,7 +108,7 @@ spec:
         - name: cni-plugin
           mountPath: /opt/cni/bin
       - name: install-cni
-        image: blitz:0.1.5-19-g7d286e2
+        image: blitz:0.1.8
         imagePullPolicy: Never
         command:
         - cp
@@ -125,7 +125,7 @@ spec:
           mountPath: /run/xtables.lock
       containers:
       - name: kube-blitz
-        image: blitz:0.1.5-19-g7d286e2
+        image: blitz:0.1.8
         imagePullPolicy: Never
         command:
         - /opt/bin/blitzd
@@ -133,7 +133,7 @@ spec:
         # get cluster cidr from kube-controller-manager
         - --ip-Masq
         - --ClusterCIDR=10.244.0.0/16,2001:db8:42:0::/56
-        - --mode=host-gw
+        # - --mode=host-gw
         resources:
           requests:
             cpu: "100m"
