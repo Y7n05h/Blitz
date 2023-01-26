@@ -98,16 +98,6 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 		return nil
 	}
 	storage, err := config.LoadStorage()
-	if storage.EnableIPv4() {
-		if enable, _ := checkForwardEnable("net.ipv4.conf.all.forwarding"); !enable {
-			log.Log.Fatal("IPv4 forward is not enabled!")
-		}
-	}
-	if storage.EnableIPv6() {
-		if enable, _ := checkForwardEnable("net.ipv6.conf.all.forwarding"); !enable {
-			log.Log.Fatal("IPv6 forward is not enabled!")
-		}
-	}
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			storage, err = CreateStorage(node)
@@ -116,6 +106,16 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 			}
 		} else {
 			log.Log.Fatal("Load Storage Failed:", err)
+		}
+	}
+	if storage.EnableIPv4() {
+		if enable, _ := checkForwardEnable("net.ipv4.conf.all.forwarding"); !enable {
+			log.Log.Fatal("IPv4 forward is not enabled!")
+		}
+	}
+	if storage.EnableIPv6() {
+		if enable, _ := checkForwardEnable("net.ipv6.conf.all.forwarding"); !enable {
+			log.Log.Fatal("IPv6 forward is not enabled!")
 		}
 	}
 	if opts.ipMasq {
