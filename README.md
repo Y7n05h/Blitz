@@ -14,6 +14,30 @@ Blitz 十分易于部署，通常来说您不必修改配置文件，Blitz 将�
 kubectl apply -f https://raw.githubusercontent.com/Y7n05h/Blitz/master/doc/blitz.yaml
 ```
 
+### 系统要求
+
+#### IP 转发
+若要在 IPv4 下使用 Blitz，则需开启 IPv4 转发：
+
+```
+net.ipv4.ip_forward = 1
+```
+
+若要在 IPv6 下使用 Blitz，则需开启 IPv6 转发：
+
+```
+net.ipv6.conf.all.forwarding = 1
+```
+
+#### Kubernetes
+
+Blitz 只能用在 Kubernetes 集群中。Blitz 在 Kubernetes 的下列版本中进行了测试：
+
+- 1.25
+- 1.26
+
+在其他版本的 Kubernetes 中 Blitz 的运行状况未经测试。
+
 ### 配置
 
 对 Blitz 的配置需要通过修改 Blitzd 的命令行参数来完成。
