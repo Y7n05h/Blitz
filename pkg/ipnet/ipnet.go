@@ -64,6 +64,9 @@ func (n *IPNet) String() string {
 func (n *IPNet) IsIPv4() bool {
 	return n.IP.To4() != nil
 }
+func (n *IPNet) Contains(ip net.IP) bool {
+	return n.ToNetIPNet().Contains(ip)
+}
 func FromTypesIPNet(ipnet *types.IPNet) *IPNet {
 	return (*IPNet)(ipnet)
 }
