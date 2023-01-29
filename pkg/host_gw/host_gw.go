@@ -1,8 +1,14 @@
 package host_gw
 
 import (
+	"blitz/pkg/config"
+	"blitz/pkg/devices"
 	"blitz/pkg/events"
 	"blitz/pkg/log"
+	nodeMetadata "blitz/pkg/node"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/vishvananda/netlink"
 )
@@ -93,4 +99,38 @@ func (h *Handle) DelHandle(event *events.Event) {
 			return
 		}
 	}
+}
+func Register(nodeName string, storage *config.PlugStorage, clientset *kubernetes.Clientset, node *corev1.Node) (*Handle, error) {
+	annotations := nodeMetadata.Annotations{}
+	hostGwHandle := Handle{NodeName: nodeName}
+	if storage.EnableIPv4() {
+		defaultLink, err := devices.GetDefaultGateway(devices.IPv4)
+		if err != nil {
+			log.Log.Debug("No valid route")
+			return nil, err
+		}
+		hostGwHandle.IPv4Link = defaultLink
+		hostIP, err := devices.GetHostIP(devices.IPv4)
+		if err != nil {
+			return nil, err
+		}
+		annotations.PublicIPv4 = hostIP
+	}
+	if storage.EnableIPv6() {
+		defaultLink, err := devices.GetDefaultGateway(devices.IPv6)
+		if err != nil {
+			log.Log.Debug("No valid route")
+			return nil, err
+		}
+		hostGwHandle.IPv6Link = defaultLink
+		hostIP, err := devices.GetHostIP(devices.IPv6)
+		if err != nil {
+			return nil, err
+		}
+		annotations.PublicIPv6 = hostIP
+	}
+	if err := nodeMetadata.AddAnnotationsForNode(clientset, &annotations, node); err != nil {
+		return nil, err
+	}
+	return &hostGwHandle, nil
 }

@@ -3,9 +3,7 @@ package main
 import (
 	"blitz/pkg/config"
 	"blitz/pkg/constant"
-	"blitz/pkg/devices"
 	"blitz/pkg/events"
-	"blitz/pkg/hardware"
 	"blitz/pkg/host_gw"
 	"blitz/pkg/ipnet"
 	"blitz/pkg/iptables"
@@ -17,7 +15,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"net"
 	"os"
 
 	"github.com/containernetworking/plugins/pkg/utils/sysctl"
@@ -137,82 +134,18 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	var handle events.EventHandle
 	switch opts.mode {
 	case "vxlan":
-		annotations := nodeMetadata.Annotations{}
-		vxlanHandle := vxlan.Handle{NodeName: nodeName}
-		if storage.EnableIPv4() {
-			annotations.PublicIPv4, err = devices.GetHostIP(devices.IPv4)
-			if err != nil {
-				return err
-			}
-			vxlanHandle.Ipv4Vxlan, err = devices.SetupVXLAN(ipnet.FromIPAndMask(storage.Ipv4Cfg.PodCIDR.IP, net.CIDRMask(32, 32)), annotations.PublicIPv4.IP, constant.VXLANName)
-			if err != nil {
-				log.Log.Error("SetupVXLAN:", err)
-				return err
-			}
-			log.Log.Debug("SetupVXLAN for IPv4 Success")
-			macAddr := *hardware.FromNetHardware(&vxlanHandle.Ipv4Vxlan.Attrs().HardwareAddr)
-			if macAddr == nil {
-				return fmt.Errorf("get Mac Addr Error")
-			}
-			annotations.IPv4VxlanMacAddr = macAddr
-		}
-		if storage.EnableIPv6() {
-			annotations.PublicIPv6, err = devices.GetHostIP(devices.IPv6)
-			if err != nil {
-				return err
-			}
-			vxlanHandle.Ipv6Vxlan, err = devices.SetupVXLAN(ipnet.FromIPAndMask(storage.Ipv6Cfg.PodCIDR.IP, net.CIDRMask(128, 128)), annotations.PublicIPv6.IP, constant.VXLANName+"v6")
-			if err != nil {
-				log.Log.Error("SetupVXLAN:", err)
-				return err
-			}
-			log.Log.Debug("SetupVXLAN for IPv6 Success")
-			macAddr := *hardware.FromNetHardware(&vxlanHandle.Ipv6Vxlan.Attrs().HardwareAddr)
-			if macAddr == nil {
-				return fmt.Errorf("get Mac Addr Error")
-			}
-			annotations.IPv6VxlanMacAddr = macAddr
-		}
-		err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, node)
+		vxlanHandle, err := vxlan.Register(nodeName, storage, clientset, node)
 		if err != nil {
-			return err
+			log.Log.Fatalf("Create vxlan Handle failed:%v", err)
 		}
-		handle = &vxlanHandle
+		handle = vxlanHandle
 		log.Log.Debug("AddVXLAN Info Success")
 	case "host-gw":
-		annotations := nodeMetadata.Annotations{}
-		hostGwHandle := host_gw.Handle{NodeName: nodeName}
-		if storage.EnableIPv4() {
-			defaultLink, err := devices.GetDefaultGateway(devices.IPv4)
-			if err != nil {
-				log.Log.Debug("No valid route")
-				return err
-			}
-			hostGwHandle.IPv4Link = defaultLink
-			hostIP, err := devices.GetHostIP(devices.IPv4)
-			if err != nil {
-				return err
-			}
-			annotations.PublicIPv4 = hostIP
-		}
-		if storage.EnableIPv6() {
-			defaultLink, err := devices.GetDefaultGateway(devices.IPv6)
-			if err != nil {
-				log.Log.Debug("No valid route")
-				return err
-			}
-			hostGwHandle.IPv6Link = defaultLink
-			hostIP, err := devices.GetHostIP(devices.IPv6)
-			if err != nil {
-				return err
-			}
-			annotations.PublicIPv6 = hostIP
-		}
-		err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, node)
+		HostGwHandle, err := host_gw.Register(nodeName, storage, clientset, node)
 		if err != nil {
-			return err
+			log.Log.Fatalf("Create host-gw Handle failed:%v", err)
 		}
-		handle = &hostGwHandle
+		handle = HostGwHandle
 	default:
 		log.Log.Fatal("Invalid mode.")
 	}

@@ -1,12 +1,21 @@
 package vxlan
 
 import (
+	"blitz/pkg/config"
+	"blitz/pkg/constant"
 	"blitz/pkg/devices"
 	"blitz/pkg/events"
 	"blitz/pkg/hardware"
 	"blitz/pkg/ipnet"
 	"blitz/pkg/log"
+	nodeMetadata "blitz/pkg/node"
+	"fmt"
+	"net"
 	"syscall"
+
+	corev1 "k8s.io/api/core/v1"
+
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/vishvananda/netlink"
 )
@@ -104,4 +113,48 @@ func (v *Handle) DelHandle(event *events.Event) {
 		}
 		delHandle(v.Ipv6Vxlan.Attrs().Index, event.IPv6PodCIDR, event.Attr.PublicIPv6, event.Attr.IPv6VxlanMacAddr)
 	}
+}
+func Register(nodeName string, storage *config.PlugStorage, clientset *kubernetes.Clientset, node *corev1.Node) (*Handle, error) {
+	annotations := nodeMetadata.Annotations{}
+	vxlanHandle := Handle{NodeName: nodeName}
+	var err error
+	if storage.EnableIPv4() {
+		annotations.PublicIPv4, err = devices.GetHostIP(devices.IPv4)
+		if err != nil {
+			return nil, err
+		}
+		vxlanHandle.Ipv4Vxlan, err = devices.SetupVXLAN(ipnet.FromIPAndMask(storage.Ipv4Cfg.PodCIDR.IP, net.CIDRMask(32, 32)), annotations.PublicIPv4.IP, constant.VXLANName)
+		if err != nil {
+			log.Log.Error("SetupVXLAN:", err)
+			return nil, err
+		}
+		log.Log.Debug("SetupVXLAN for IPv4 Success")
+		macAddr := *hardware.FromNetHardware(&vxlanHandle.Ipv4Vxlan.Attrs().HardwareAddr)
+		if macAddr == nil {
+			return nil, fmt.Errorf("get Mac Addr Error")
+		}
+		annotations.IPv4VxlanMacAddr = macAddr
+	}
+	if storage.EnableIPv6() {
+		annotations.PublicIPv6, err = devices.GetHostIP(devices.IPv6)
+		if err != nil {
+			return nil, err
+		}
+		vxlanHandle.Ipv6Vxlan, err = devices.SetupVXLAN(ipnet.FromIPAndMask(storage.Ipv6Cfg.PodCIDR.IP, net.CIDRMask(128, 128)), annotations.PublicIPv6.IP, constant.VXLANName+"v6")
+		if err != nil {
+			log.Log.Error("SetupVXLAN:", err)
+			return nil, err
+		}
+		log.Log.Debug("SetupVXLAN for IPv6 Success")
+		macAddr := *hardware.FromNetHardware(&vxlanHandle.Ipv6Vxlan.Attrs().HardwareAddr)
+		if macAddr == nil {
+			return nil, fmt.Errorf("get Mac Addr Error")
+		}
+		annotations.IPv6VxlanMacAddr = macAddr
+	}
+	err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, node)
+	if err != nil {
+		return nil, err
+	}
+	return &vxlanHandle, nil
 }
