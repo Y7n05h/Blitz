@@ -8,14 +8,10 @@ import (
 	"blitz/pkg/hardware"
 	"blitz/pkg/ipnet"
 	"blitz/pkg/log"
-	nodeMetadata "blitz/pkg/node"
+	"blitz/pkg/node"
 	"fmt"
 	"net"
 	"syscall"
-
-	corev1 "k8s.io/api/core/v1"
-
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/vishvananda/netlink"
 )
@@ -114,8 +110,7 @@ func (v *Handle) DelHandle(event *events.Event) {
 		delHandle(v.Ipv6Vxlan.Attrs().Index, event.IPv6PodCIDR, event.Attr.PublicIPv6, event.Attr.IPv6VxlanMacAddr)
 	}
 }
-func Register(nodeName string, storage *config.PlugStorage, clientset *kubernetes.Clientset, node *corev1.Node) (*Handle, error) {
-	annotations := nodeMetadata.Annotations{}
+func Register(nodeName string, storage *config.PlugStorage, annotations *node.Annotations) (*Handle, error) {
 	vxlanHandle := Handle{NodeName: nodeName}
 	var err error
 	if storage.EnableIPv4() {
@@ -151,10 +146,6 @@ func Register(nodeName string, storage *config.PlugStorage, clientset *kubernete
 			return nil, fmt.Errorf("get Mac Addr Error")
 		}
 		annotations.IPv6VxlanMacAddr = macAddr
-	}
-	err = nodeMetadata.AddAnnotationsForNode(clientset, &annotations, node)
-	if err != nil {
-		return nil, err
 	}
 	return &vxlanHandle, nil
 }

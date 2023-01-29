@@ -7,9 +7,6 @@ import (
 	"blitz/pkg/log"
 	nodeMetadata "blitz/pkg/node"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
-
 	"github.com/vishvananda/netlink"
 )
 
@@ -100,8 +97,7 @@ func (h *Handle) DelHandle(event *events.Event) {
 		}
 	}
 }
-func Register(nodeName string, storage *config.PlugStorage, clientset *kubernetes.Clientset, node *corev1.Node) (*Handle, error) {
-	annotations := nodeMetadata.Annotations{}
+func Register(nodeName string, storage *config.PlugStorage, annotations *nodeMetadata.Annotations) (*Handle, error) {
 	hostGwHandle := Handle{NodeName: nodeName}
 	if storage.EnableIPv4() {
 		defaultLink, err := devices.GetDefaultGateway(devices.IPv4)
@@ -128,9 +124,6 @@ func Register(nodeName string, storage *config.PlugStorage, clientset *kubernete
 			return nil, err
 		}
 		annotations.PublicIPv6 = hostIP
-	}
-	if err := nodeMetadata.AddAnnotationsForNode(clientset, &annotations, node); err != nil {
-		return nil, err
 	}
 	return &hostGwHandle, nil
 }

@@ -89,7 +89,26 @@ func checkForwardEnable(key string) (bool, error) {
 	value, err := sysctl.Sysctl(key)
 	return value == "1", err
 }
-
+func registerFactory(nodeName string, storage *config.PlugStorage, clientset *kubernetes.Clientset, node *corev1.Node) (handle events.EventHandle, err error) {
+	annotations := &nodeMetadata.Annotations{}
+	switch opts.mode {
+	case "vxlan":
+		handle, err = vxlan.Register(nodeName, storage, annotations)
+	case "host-gw":
+		handle, err = host_gw.Register(nodeName, storage, annotations)
+	case "cross-subnet":
+		handle, err = crosssubnet.Register(nodeName, storage, annotations)
+	default:
+		return nil, fmt.Errorf("invalid mode")
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err = nodeMetadata.AddAnnotationsForNode(clientset, annotations, node); err != nil {
+		return nil, err
+	}
+	return handle, nil
+}
 func Run(nodeName string, clientset *kubernetes.Clientset) error {
 	node, err := nodeMetadata.GetCurrentNode(clientset, nodeName)
 	if err != nil {
@@ -132,29 +151,9 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 			}
 		}
 	}
-	var handle events.EventHandle
-	switch opts.mode {
-	case "vxlan":
-		vxlanHandle, err := vxlan.Register(nodeName, storage, clientset, node)
-		if err != nil {
-			log.Log.Fatalf("Create vxlan Handle failed:%v", err)
-		}
-		handle = vxlanHandle
-		log.Log.Debug("AddVXLAN Info Success")
-	case "host-gw":
-		HostGwHandle, err := host_gw.Register(nodeName, storage, clientset, node)
-		if err != nil {
-			log.Log.Fatalf("Create host-gw Handle failed:%v", err)
-		}
-		handle = HostGwHandle
-	case "cross-subnet":
-		crossSubnetHandle, err := crosssubnet.Register(nodeName, storage, clientset, node)
-		if err != nil {
-			log.Log.Fatalf("Create cross-subnet Handle failed:%v", err)
-		}
-		handle = crossSubnetHandle
-	default:
-		log.Log.Fatal("Invalid mode.")
+	handle, err := registerFactory(nodeName, storage, clientset, node)
+	if err != nil {
+		log.Log.Fatal("register failed:%v", err)
 	}
 	ctx := context.TODO()
 	reconciler, err := Reconciler.NewReconciler(ctx, clientset, storage, handle)

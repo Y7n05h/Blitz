@@ -7,11 +7,9 @@ import (
 	"blitz/pkg/host_gw"
 	"blitz/pkg/ipnet"
 	"blitz/pkg/log"
+	"blitz/pkg/node"
 	"blitz/pkg/vxlan"
 	"fmt"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 var _ events.EventHandle = (*Handle)(nil)
@@ -78,12 +76,12 @@ func (v *Handle) DelHandle(event *events.Event) {
 		}
 	}
 }
-func Register(nodeName string, storage *config.PlugStorage, clientset *kubernetes.Clientset, node *corev1.Node) (*Handle, error) {
-	vxlanHandle, err := vxlan.Register(nodeName, storage, clientset, node)
+func Register(nodeName string, storage *config.PlugStorage, annotations *node.Annotations) (*Handle, error) {
+	vxlanHandle, err := vxlan.Register(nodeName, storage, annotations)
 	if err != nil {
 		return nil, fmt.Errorf("create vxlan Handle failed:%w", err)
 	}
-	HostGwHandle, err := host_gw.Register(nodeName, storage, clientset, node)
+	HostGwHandle, err := host_gw.Register(nodeName, storage, annotations)
 	if err != nil {
 		return nil, fmt.Errorf("create host-gw Handle failed:%w", err)
 	}
