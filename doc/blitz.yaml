@@ -96,8 +96,8 @@ spec:
       serviceAccountName: blitz
       initContainers:
       - name: install-cni-plugin
-        image: blitz:0.1.8
-        imagePullPolicy: Never
+        image: ghcr.io/y7n05h/blitz:0.1.9
+        imagePullPolicy: IfNotPresent
         command:
         - cp
         args:
@@ -108,8 +108,8 @@ spec:
         - name: cni-plugin
           mountPath: /opt/cni/bin
       - name: install-cni
-        image: blitz:0.1.8
-        imagePullPolicy: Never
+        image: ghcr.io/y7n05h/blitz:0.1.9
+        imagePullPolicy: IfNotPresent
         command:
         - cp
         args:
@@ -125,8 +125,8 @@ spec:
           mountPath: /run/xtables.lock
       containers:
       - name: kube-blitz
-        image: blitz:0.1.8
-        imagePullPolicy: Never
+        image: ghcr.io/y7n05h/blitz:0.1.9
+        imagePullPolicy: IfNotPresent
         command:
         - /opt/bin/blitzd
         args:
