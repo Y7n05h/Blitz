@@ -25,10 +25,11 @@ Blitzd 接受下列命令行参数：
 --ClusterCIDR=string
 配置集群的 CIDR，接受以 comma 分割的 CIDR，此处的配置应当与 api server 的 --service-cluster-ip-range 参数保持一致。
 --mode=string
-选择使用 vxlan 模式或 host-gw 模式，如未提供 mode 参数则默认使用 vxlan 模式。
+选择使用 vxlan 模式、host-gw 模式或 cross-subnet 模式，如未提供 mode 参数则默认使用 vxlan 模式。
 
 ### RoadMap
 - [x] 实现 Blitz 的 VXLAN 模式和 host-gw 模式
+- [x] 实现 Blitz 基于 VXLAN 的 host-gw 跨子网组网
 - [x] 实现 ip-masq
 - [ ] 适配 [KEP-2593: Enhanced NodeIPAM to support Discontiguous Cluster CIDR](https://github.com/kubernetes/enhancements/tree/master/keps/sig-network/2593-multiple-cluster-cidrs)
 - [ ] 通过 BGP 实现更复杂的网络结构（目前 Blitz 要求所有 Node 均满足 2层可达）

@@ -3,6 +3,7 @@ package main
 import (
 	"blitz/pkg/config"
 	"blitz/pkg/constant"
+	crosssubnet "blitz/pkg/cross_subnet"
 	"blitz/pkg/events"
 	"blitz/pkg/host_gw"
 	"blitz/pkg/ipnet"
@@ -38,7 +39,7 @@ func init() {
 	flag.BoolVar(&opts.version, "version", false, "")
 	flag.BoolVar(&opts.ipMasq, "ip-Masq", false, "")
 	flag.StringVar(&opts.clusterCIDR, "ClusterCIDR", "", "")
-	flag.StringVar(&opts.mode, "mode", "vxlan", "Mode of Blitz (vxlan/host-gw)")
+	flag.StringVar(&opts.mode, "mode", "vxlan", "Mode of Blitz (vxlan/host-gw/cross-subnet)")
 }
 func main() {
 	log.InitLog(constant.EnableLog, false, "blitzd")
@@ -146,6 +147,12 @@ func Run(nodeName string, clientset *kubernetes.Clientset) error {
 			log.Log.Fatalf("Create host-gw Handle failed:%v", err)
 		}
 		handle = HostGwHandle
+	case "cross-subnet":
+		crossSubnetHandle, err := crosssubnet.Register(nodeName, storage, clientset, node)
+		if err != nil {
+			log.Log.Fatalf("Create cross-subnet Handle failed:%v", err)
+		}
+		handle = crossSubnetHandle
 	default:
 		log.Log.Fatal("Invalid mode.")
 	}
