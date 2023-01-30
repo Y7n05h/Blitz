@@ -10,7 +10,7 @@ require (
 	github.com/vishalkuo/bimap v0.0.0-20220726225509-e0b4f20de28b
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	go.uber.org/zap v1.23.0
-	k8s.io/api v0.25.4
+	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v0.25.4
 )
